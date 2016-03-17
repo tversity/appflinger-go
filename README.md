@@ -3,6 +3,9 @@ appflinger-go
 
 This is the official Go client SDK for AppFlinger (www.appflinger.com). It does not come with a full client implementation but rather it is just the client SDK along with some examples.
 
+A full reference documentation of the SDK is available under:
+http://tversity.github.io/appflinger-go/
+
 There is also a C client SDK (available in binary form), a [Javascript client SDK](https://github.com/ronenmiz/appflinger-js), and a [C# client SDK](https://github.com/ronenmiz/appflinger-mediaroom), as well as a full client implementation for the Raspberry Pi (please contact TVersity to gain access to it). 
 
 The server side code is closed source and is available for licensing from TVersity, please contact us for more information.
