@@ -1,3 +1,7 @@
+// Copyright 2015 TVersity Inc. All rights reserved.
+// Use of this source code is governed by an Apache 2.0
+// license that can be found in the LICENSE file.
+
 package main
 
 import (
@@ -28,7 +32,7 @@ var cookieJar *cookiejar.Jar
 func init() {
 	flag.StringVar(&serverPort, "port", "8080", "The server port")
 	flag.StringVar(&serverIP, "ip", "localhost", "The server IP")
-	flag.StringVar(&browserURL, "url", "https://www.youtube.com/tv?env_mediaSourceDevelopment=1", "The web address of the page to be loaded by each user")
+	flag.StringVar(&browserURL, "url", "https://www.youtube.com/tv?env_mediaSourceDevelopment=1", "The web address of the page to be loaded")
 }
 
 func initVars() {
@@ -69,6 +73,8 @@ func SendEvent(code int, delay time.Duration) {
 }
 
 func ControlChannel(shouldStop chan bool) {
+	// Use a stub implementation of control channel callbacks used for testing / demonstration
+	// A real client implementation will need to replace the stub with a complete implementation
 	stub := NewAppFlingerStub()
 	err := appflinger.ControlChannelRoutine(cookieJar, serverProtocolHost, sessionId, stub, shouldStop)
 	if err != nil {
@@ -76,7 +82,7 @@ func ControlChannel(shouldStop chan bool) {
 	}
 }
 
-func RunUser(shouldStop chan bool, done chan bool) () {
+func RunSession(shouldStop chan bool, done chan bool) () {
 	StartSession()
 
 	fmt.Println("New session:", sessionId)
@@ -95,7 +101,7 @@ func RunUser(shouldStop chan bool, done chan bool) () {
 	// Control channel implementation
 	go ControlChannel(shouldStop)
 
-	// Simulate key presses
+	// Simulate key presses in a loop
 	for {
 			
 		// Check if need to abort in a non blocking way		
@@ -131,7 +137,8 @@ func main() {
 	shouldStop := make(chan bool, 1)
 	done := make(chan bool, 1)
 
-	go RunUser(shouldStop, done)
+	// Run a session until interupted
+	go RunSession(shouldStop, done)
 
 	// Wait for Ctrl-C
 	c := make(chan os.Signal, 1)

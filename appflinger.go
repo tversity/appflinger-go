@@ -1,3 +1,21 @@
+// Copyright 2015 TVersity Inc. All rights reserved.
+// Use of this source code is governed by an Apache 2.0
+// license that can be found in the LICENSE file.
+
+// This package implements the AppFlinger client SDK.
+//
+// It supports the following:
+//  - Start/stop a session
+//  - Inject input to a session
+//  - Control channel implementation using HTTP long polling
+//
+// The client needs to implement the AppFlinger interface in order to process the control channel commands.
+// An example is available under examples/stub.go which is just a stub implementation of the AppFlinger interface.
+// This stub is used by examples/main.go, which illustrates how to use the client SDK. It starts a session,
+// connects to its control channel and injects input in a loop until interrupted by the user, at which point
+// the session is stopped.
+//
+// The full code for the SDK along with the examples is available under: https://github.com/tversity/appflinger-go.
 package appflinger
 
 import (
@@ -16,7 +34,7 @@ import (
 )
 
 const (
-	// Network state constants
+	// Network state constants (used by the getNetworkState() control channel command)
 	NETWORK_STATE_EMPTY         = 0
 	NETWORK_STATE_IDLE          = 1
 	NETWORK_STATE_LOADING       = 2
@@ -25,7 +43,7 @@ const (
 	NETWORK_STATE_NETWORK_ERROR = 5
 	NETWORK_STATE_DECODE_ERROR  = 6
 
-	// Ready state constants
+	// Ready state constants  (used by the getReadykState() control channel command)
 	READY_STATE_HAVE_NOTHING      = 0
 	READY_STATE_HAVE_METADATA     = 1
 	READY_STATE_HAVE_CURRENT_DATA = 2
@@ -48,10 +66,15 @@ const (
 	KEY_ESCAPE    = 0x1b
 )
 
+// The struct returned after successfully starting a session.
+// It holds the information pertaining to the created browser session.
 type StartSessionResp struct {
 	SessionID string
 }
 
+// The client needs to implement this interface in order to process the control channel commands.
+// An example is available under examples/stub.go. The "AppFlinger API and Client Integration Guide"
+// describes the control channel operation and its various commands in detail.
 type AppFlinger interface {
 	Load(url string) (err error)
 	CancelLoad() (err error)
@@ -312,6 +335,10 @@ func processRPCRequest(req *controlChannelRequest, appf AppFlinger) (resp string
 	return
 }
 
+// This function is intended to be executed as a go routine.
+// It connects to the control channel of the given session using HTTP long polling and remains
+// connected until either stopped via the shouldStop channel or an error occurs.
+// The caller needs to implement the AppFlinger interface and pass it as an argument to this function.
 func ControlChannelRoutine(cookieJar *cookiejar.Jar, serverProtocolHost string, sessionId string, appf AppFlinger, shouldStop <-chan bool) (err error) {
 	shouldReset := true
 	postMessage := ""
@@ -491,6 +518,14 @@ func apiReq(cookieJar *cookiejar.Jar, uri string, resp interface{}) (err error) 
 	return
 }
 
+// This function is used to start a new session or navigate an existing one to a new address.
+// The arguments to this function are as per the descirption of the /osb/session/start API in
+// the "AppFlinger API and Client Integration Guide".
+// The function returns a struct with the data returned from the server (namely the session id) as well as
+// a Go cookie jar, which needs to be used in all subsequent API requests for this session. Note that Cookies
+// are important for load balancing stickyness such that a session start request is made without any cookies
+// but may return a cookie when a load balancer is used. This returned cookie must be passed in any subsequent
+// requests that need to use the session so that the load balancer will hit the correct server. 
 func SessionStart(serverProtocolHost string, browserURL string,  pullMode bool, isVideoPassthru bool, browserUIOutputURL string,
 videoStreamURI string) (rsp *StartSessionResp, cookieJar *cookiejar.Jar, err error) {
 	rsp = nil
@@ -540,6 +575,10 @@ videoStreamURI string) (rsp *StartSessionResp, cookieJar *cookiejar.Jar, err err
 	return
 }
 
+// This function is used to stop a session.
+// The arguments to this function are as per the descirption of the /osb/session/stop API in
+// the "AppFlinger API and Client Integration Guide", with the exception of the cookie jar which was
+// returned when the session was started.
 func SessionStop(cookieJar *cookiejar.Jar, serverProtocolHost string, sessionId string) (err error) {
 	// Construct the URL
 	uri := replaceVars(_SESSION_STOP_URL, []string{
@@ -555,6 +594,10 @@ func SessionStop(cookieJar *cookiejar.Jar, serverProtocolHost string, sessionId 
 	return
 }
 
+// This function is used to inject input into a session.
+// The arguments to this function are as per the descirption of the /osb/session/event API in
+// the "AppFlinger API and Client Integration Guide", with the exception of the cookie jar which was
+// returned when the session was started.
 func SessionEvent(cookieJar *cookiejar.Jar, serverProtocolHost string, sessionId string, eventType string, code int, x int, y int) (err error) {
 	// Construct the URL
 	uri := _SESSION_EVENT_URL

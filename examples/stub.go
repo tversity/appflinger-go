@@ -1,3 +1,7 @@
+// Copyright 2015 TVersity Inc. All rights reserved.
+// Use of this source code is governed by an Apache 2.0
+// license that can be found in the LICENSE file.
+
 package main
 
 import (
@@ -5,6 +9,8 @@ import (
 	"github.com/tversity/appflinger-go"
 )
 
+// This struct will implement the appflinger.AppFlinger interface which is needed in order to
+// receive the control channel commands and process them
 type AppFlingerStub struct {
 	loaded bool
 	paused bool
@@ -16,6 +22,9 @@ func NewAppFlingerStub() (self *AppFlingerStub) {
 	self.paused = true
 	return
 }
+
+// Stub implementation of all the methods in  appflinger.AppFlinger interface
+// A full client should replace the stub with proper implementation
 
 func (self *AppFlingerStub) Load(url string) (err error) {
 	err = nil
