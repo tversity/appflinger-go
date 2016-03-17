@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#375EAB">
+
+  <title>appflinger - The Go Programming Language</title>
+
+<link type="text/css" rel="stylesheet" href="/lib/godoc/style.css">
+
+<link rel="stylesheet" href="/lib/godoc/jquery.treeview.css">
+<script type="text/javascript">window.initFuncs = [];</script>
+</head>
+<body>
+
+<div id='lowframe' style="position: fixed; bottom: 0; left: 0; height: 0; width: 100%; border-top: thin solid grey; background-color: white; overflow: auto;">
+...
+</div><!-- #lowframe -->
+
+<div id="topbar" class="wide"><div class="container">
+<div class="top-heading" id="heading-wide"><a href="/">The Go Programming Language</a></div>
+<div class="top-heading" id="heading-narrow"><a href="/">Go</a></div>
+<a href="#" id="menu-button"><span id="menu-button-arrow">&#9661;</span></a>
+<form method="GET" action="/search">
+<div id="menu">
+<a href="/doc/">Documents</a>
+<a href="/pkg/">Packages</a>
+<a href="/project/">The Project</a>
+<a href="/help/">Help</a>
+<a href="/blog/">Blog</a>
+
+<input type="text" id="search" name="q" class="inactive" value="Search" placeholder="Search">
+</div>
+</form>
+
+</div></div>
+
+
+
+<div id="page" class="wide">
+<div class="container">
+
+
+  <h1>Package appflinger</h1>
+
+
+
+
+<div id="nav"></div>
+
+
+<!--
+	Copyright 2009 The Go Authors. All rights reserved.
+	Use of this source code is governed by a BSD-style
+	license that can be found in the LICENSE file.
+-->
+<!--
+	Note: Static (i.e., not template-generated) href and id
+	attributes start with "pkg-" to make it impossible for
+	them to conflict with generated attributes (some of which
+	correspond to Go identifiers).
+-->
+
+	<script type='text/javascript'>
+	document.ANALYSIS_DATA = null;
+	document.CALLGRAPH = null;
+	</script>
+
+	
+		
+		<div id="short-nav">
+			<dl>
+			<dd><code>import "github.com/tversity/appflinger-go"</code></dd>
+			</dl>
+			<dl>
+			<dd><a href="#pkg-overview" class="overviewLink">Overview</a></dd>
+			<dd><a href="#pkg-index" class="indexLink">Index</a></dd>
+			
+			
+				<dd><a href="#pkg-subdirectories">Subdirectories</a></dd>
+			
+			</dl>
+		</div>
+		<!-- The package's Name is printed as title by the top-level template -->
+		<div id="pkg-overview" class="toggleVisible">
+			<div class="collapsed">
+				<h2 class="toggleButton" title="Click to show Overview section">Overview ▹</h2>
+			</div>
+			<div class="expanded">
+				<h2 class="toggleButton" title="Click to hide Overview section">Overview ▾</h2>
+				<p>
+This package implements the AppFlinger client SDK.
+</p>
+<p>
+It supports the following:
+</p>
+<pre>- Start/stop a session
+- Inject input to a session
+- Control channel implementation using HTTP long polling
+</pre>
+<p>
+The client needs to implement the AppFlinger interface in order to process the control channel commands.
+An example is available under examples/stub.go which is just a stub implementation of the AppFlinger interface.
+This stub is used by examples/main.go, which illustrates how to use the client SDK. It starts a session,
+connects to its control channel and injects input in a loop until interrupted by the user, at which point
+the session is stopped.
+</p>
+<p>
+The full code for the SDK along with the examples is available under: <a href="https://github.com/tversity/appflinger-go">https://github.com/tversity/appflinger-go</a>.
+</p>
+
+			</div>
+		</div>
+		
+
+		<div id="pkg-index" class="toggleVisible">
+		<div class="collapsed">
+			<h2 class="toggleButton" title="Click to show Index section">Index ▹</h2>
+		</div>
+		<div class="expanded">
+			<h2 class="toggleButton" title="Click to hide Index section">Index ▾</h2>
+
+		<!-- Table of contents for API; must be named manual-nav to turn off auto nav. -->
+			<div id="manual-nav">
+			<dl>
+			
+				<dd><a href="#pkg-constants">Constants</a></dd>
+			
+			
+			
+				
+				<dd><a href="#ControlChannelRoutine">func ControlChannelRoutine(cookieJar *cookiejar.Jar, serverProtocolHost string, sessionId string, appf AppFlinger, shouldStop &lt;-chan bool) (err error)</a></dd>
+			
+				
+				<dd><a href="#SessionEvent">func SessionEvent(cookieJar *cookiejar.Jar, serverProtocolHost string, sessionId string, eventType string, code int, x int, y int) (err error)</a></dd>
+			
+				
+				<dd><a href="#SessionStop">func SessionStop(cookieJar *cookiejar.Jar, serverProtocolHost string, sessionId string) (err error)</a></dd>
+			
+			
+				
+				<dd><a href="#AppFlinger">type AppFlinger</a></dd>
+				
+				
+			
+				
+				<dd><a href="#StartSessionResp">type StartSessionResp</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#SessionStart">func SessionStart(serverProtocolHost string, browserURL string, pullMode bool, isVideoPassthru bool, browserUIOutputURL string, videoStreamURI string) (rsp *StartSessionResp, cookieJar *cookiejar.Jar, err error)</a></dd>
+				
+				
+			
+			
+			</dl>
+			</div><!-- #manual-nav -->
+
+		
+
+		
+			<h4>Package files</h4>
+			<p>
+			<span style="font-size:90%">
+			
+				<a href="/src/github.com/tversity/appflinger-go/appflinger.go">appflinger.go</a>
+			
+			</span>
+			</p>
+		
+		</div><!-- .expanded -->
+		</div><!-- #pkg-index -->
+
+		<div id="pkg-callgraph" class="toggle" style="display: none">
+		<div class="collapsed">
+			<h2 class="toggleButton" title="Click to show Internal Call Graph section">Internal call graph ▹</h2>
+		</div> <!-- .expanded -->
+		<div class="expanded">
+			<h2 class="toggleButton" title="Click to hide Internal Call Graph section">Internal call graph ▾</h2>
+			<p>
+			  In the call graph viewer below, each node
+			  is a function belonging to this package
+			  and its children are the functions it
+			  calls&mdash;perhaps dynamically.
+			</p>
+			<p>
+			  The root nodes are the entry points of the
+			  package: functions that may be called from
+			  outside the package.
+			  There may be non-exported or anonymous
+			  functions among them if they are called
+			  dynamically from another package.
+			</p>
+			<p>
+			  Click a node to visit that function's source code.
+			  From there you can visit its callers by
+			  clicking its declaring <code>func</code>
+			  token.
+			</p>
+			<p>
+			  Functions may be omitted if they were
+			  determined to be unreachable in the
+			  particular programs or tests that were
+			  analyzed.
+			</p>
+			<!-- Zero means show all package entry points. -->
+			<ul style="margin-left: 0.5in" id="callgraph-0" class="treeview"></ul>
+		</div>
+		</div> <!-- #pkg-callgraph -->
+
+		
+			<h2 id="pkg-constants">Constants</h2>
+			
+				<pre>const (
+    <span class="comment">// Network state constants (used by the getNetworkState() control channel command)</span>
+    <span id="NETWORK_STATE_EMPTY">NETWORK_STATE_EMPTY</span>         = 0
+    <span id="NETWORK_STATE_IDLE">NETWORK_STATE_IDLE</span>          = 1
+    <span id="NETWORK_STATE_LOADING">NETWORK_STATE_LOADING</span>       = 2
+    <span id="NETWORK_STATE_LOADED">NETWORK_STATE_LOADED</span>        = 3
+    <span id="NETWORK_STATE_FORMAT_ERROR">NETWORK_STATE_FORMAT_ERROR</span>  = 4
+    <span id="NETWORK_STATE_NETWORK_ERROR">NETWORK_STATE_NETWORK_ERROR</span> = 5
+    <span id="NETWORK_STATE_DECODE_ERROR">NETWORK_STATE_DECODE_ERROR</span>  = 6
+
+    <span class="comment">// Ready state constants  (used by the getReadykState() control channel command)</span>
+    <span id="READY_STATE_HAVE_NOTHING">READY_STATE_HAVE_NOTHING</span>      = 0
+    <span id="READY_STATE_HAVE_METADATA">READY_STATE_HAVE_METADATA</span>     = 1
+    <span id="READY_STATE_HAVE_CURRENT_DATA">READY_STATE_HAVE_CURRENT_DATA</span> = 2
+    <span id="READY_STATE_HAVE_FUTURE_DATA">READY_STATE_HAVE_FUTURE_DATA</span>  = 3
+    <span id="READY_STATE_HAVE_ENOUGH_DATA">READY_STATE_HAVE_ENOUGH_DATA</span>  = 4
+
+    <span class="comment">// Keyboard codes for injecting events</span>
+    <span id="KEY_UP">KEY_UP</span>        = 0x26
+    <span id="KEY_DOWN">KEY_DOWN</span>      = 0x28
+    <span id="KEY_LEFT">KEY_LEFT</span>      = 0x25
+    <span id="KEY_RIGHT">KEY_RIGHT</span>     = 0x27
+    <span id="KEY_ENTER">KEY_ENTER</span>     = 0xd
+    <span id="KEY_BACKSPACE">KEY_BACKSPACE</span> = 0x8
+    <span id="KEY_ESCAPE">KEY_ESCAPE</span>    = 0x1b
+)</pre>
+				
+			
+		
+		
+		
+			
+			
+			<h2 id="ControlChannelRoutine">func <a href="/src/github.com/tversity/appflinger-go/appflinger.go?s=10236:10386#L332">ControlChannelRoutine</a></h2>
+			<pre>func ControlChannelRoutine(cookieJar *<a href="/pkg/net/http/cookiejar/">cookiejar</a>.<a href="/pkg/net/http/cookiejar/#Jar">Jar</a>, serverProtocolHost <a href="/pkg/builtin/#string">string</a>, sessionId <a href="/pkg/builtin/#string">string</a>, appf <a href="#AppFlinger">AppFlinger</a>, shouldStop &lt;-chan <a href="/pkg/builtin/#bool">bool</a>) (err <a href="/pkg/builtin/#error">error</a>)</pre>
+			<p>
+This function is intended to be executed as a go routine.
+It connects to the control channel of the given session using HTTP long polling and remains
+connected until either stopped via the shouldStop channel or an error occurs.
+The caller needs to implement the AppFlinger interface and pass it as an argument to this function.
+</p>
+
+			
+			
+
+		
+			
+			
+			<h2 id="SessionEvent">func <a href="/src/github.com/tversity/appflinger-go/appflinger.go?s=17223:17365#L591">SessionEvent</a></h2>
+			<pre>func SessionEvent(cookieJar *<a href="/pkg/net/http/cookiejar/">cookiejar</a>.<a href="/pkg/net/http/cookiejar/#Jar">Jar</a>, serverProtocolHost <a href="/pkg/builtin/#string">string</a>, sessionId <a href="/pkg/builtin/#string">string</a>, eventType <a href="/pkg/builtin/#string">string</a>, code <a href="/pkg/builtin/#int">int</a>, x <a href="/pkg/builtin/#int">int</a>, y <a href="/pkg/builtin/#int">int</a>) (err <a href="/pkg/builtin/#error">error</a>)</pre>
+			<p>
+This function is used to inject input into a session.
+The arguments to this function are as per the descirption of the /osb/session/event API in
+the &#34;AppFlinger API and Client Integration Guide&#34;, with the exception of the cookie jar which was
+returned when the session was started.
+</p>
+
+			
+			
+
+		
+			
+			
+			<h2 id="SessionStop">func <a href="/src/github.com/tversity/appflinger-go/appflinger.go?s=16606:16705#L572">SessionStop</a></h2>
+			<pre>func SessionStop(cookieJar *<a href="/pkg/net/http/cookiejar/">cookiejar</a>.<a href="/pkg/net/http/cookiejar/#Jar">Jar</a>, serverProtocolHost <a href="/pkg/builtin/#string">string</a>, sessionId <a href="/pkg/builtin/#string">string</a>) (err <a href="/pkg/builtin/#error">error</a>)</pre>
+			<p>
+This function is used to stop a session.
+The arguments to this function are as per the descirption of the /osb/session/stop API in
+the &#34;AppFlinger API and Client Integration Guide&#34;, with the exception of the cookie jar which was
+returned when the session was started.
+</p>
+
+			
+			
+
+		
+		
+			
+			
+			<h2 id="AppFlinger">type <a href="/src/github.com/tversity/appflinger-go/appflinger.go?s=2742:3516#L68">AppFlinger</a></h2>
+			<pre>type AppFlinger interface {
+    Load(url <a href="/pkg/builtin/#string">string</a>) (err <a href="/pkg/builtin/#error">error</a>)
+    CancelLoad() (err <a href="/pkg/builtin/#error">error</a>)
+    Pause() (err <a href="/pkg/builtin/#error">error</a>)
+    Play() (err <a href="/pkg/builtin/#error">error</a>)
+    Seek(time <a href="/pkg/builtin/#float64">float64</a>) (err <a href="/pkg/builtin/#error">error</a>)
+    GetPaused() (paused <a href="/pkg/builtin/#bool">bool</a>, err <a href="/pkg/builtin/#error">error</a>)
+    GetSeeking() (seeking <a href="/pkg/builtin/#bool">bool</a>, err <a href="/pkg/builtin/#error">error</a>)
+    GetDuration() (duration <a href="/pkg/builtin/#float64">float64</a>, err <a href="/pkg/builtin/#error">error</a>)
+    GetCurrentTime() (time <a href="/pkg/builtin/#float64">float64</a>, err <a href="/pkg/builtin/#error">error</a>)
+    GetNetworkState() (networkState <a href="/pkg/builtin/#int">int</a>, err <a href="/pkg/builtin/#error">error</a>)
+    GetReadyState() (readyState <a href="/pkg/builtin/#int">int</a>, err <a href="/pkg/builtin/#error">error</a>)
+    GetMaxTimeSeekable() (maxTimeSeekable <a href="/pkg/builtin/#float64">float64</a>, err <a href="/pkg/builtin/#error">error</a>)
+    SetRect(x <a href="/pkg/builtin/#uint">uint</a>, y <a href="/pkg/builtin/#uint">uint</a>, width <a href="/pkg/builtin/#uint">uint</a>, height <a href="/pkg/builtin/#uint">uint</a>) (err <a href="/pkg/builtin/#error">error</a>)
+    SetVisible(visible <a href="/pkg/builtin/#bool">bool</a>) (err <a href="/pkg/builtin/#error">error</a>)
+    SendMessage(message <a href="/pkg/builtin/#string">string</a>) (result <a href="/pkg/builtin/#string">string</a>, err <a href="/pkg/builtin/#error">error</a>)
+    OnPageLoad() (err <a href="/pkg/builtin/#error">error</a>)
+    OnAddressBarChanged(url <a href="/pkg/builtin/#string">string</a>) (err <a href="/pkg/builtin/#error">error</a>)
+    OnTitleChanged(title <a href="/pkg/builtin/#string">string</a>) (err <a href="/pkg/builtin/#error">error</a>)
+    OnPageClose() (err <a href="/pkg/builtin/#error">error</a>)
+}</pre>
+			<p>
+The client needs to implement this interface in order to process the control channel commands.
+An example is available under examples/stub.go. The &#34;AppFlinger API and Client Integration Guide&#34;
+describes the control channel operation and its various commands in detail.
+</p>
+
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="StartSessionResp">type <a href="/src/github.com/tversity/appflinger-go/appflinger.go?s=2412:2462#L61">StartSessionResp</a></h2>
+			<pre>type StartSessionResp struct {
+    SessionID <a href="/pkg/builtin/#string">string</a>
+}</pre>
+			<p>
+The struct returned after successfully starting a session.
+It holds the information pertaining to the created browser session.
+</p>
+
+
+			
+
+			
+
+			
+			
+			
+
+			
+				
+				<h3 id="SessionStart">func <a href="/src/github.com/tversity/appflinger-go/appflinger.go?s=15252:15464#L519">SessionStart</a></h3>
+				<pre>func SessionStart(serverProtocolHost <a href="/pkg/builtin/#string">string</a>, browserURL <a href="/pkg/builtin/#string">string</a>, pullMode <a href="/pkg/builtin/#bool">bool</a>, isVideoPassthru <a href="/pkg/builtin/#bool">bool</a>, browserUIOutputURL <a href="/pkg/builtin/#string">string</a>,
+    videoStreamURI <a href="/pkg/builtin/#string">string</a>) (rsp *<a href="#StartSessionResp">StartSessionResp</a>, cookieJar *<a href="/pkg/net/http/cookiejar/">cookiejar</a>.<a href="/pkg/net/http/cookiejar/#Jar">Jar</a>, err <a href="/pkg/builtin/#error">error</a>)</pre>
+				<p>
+This function is used to start a new session or navigate an existing one to a new address.
+The arguments to this function are as per the descirption of the /osb/session/start API in
+the &#34;AppFlinger API and Client Integration Guide&#34;.
+The function returns a struct with the data returned from the server (namely the session id) as well as
+a Go cookie jar, which needs to be used in all subsequent API requests for this session. Note that Cookies
+are important for load balancing stickyness such that a session start request is made without any cookies
+but may return a cookie when a load balancer is used. This returned cookie must be passed in any subsequent
+requests that need to use the session so that the load balancer will hit the correct server.
+</p>
+
+				
+				
+			
+
+			
+		
+	
+
+	
+
+
+
+
+
+	
+	
+		<h2 id="pkg-subdirectories">Subdirectories</h2>
+	
+	
+
+
+	<div class="pkg-dir">
+		<table>
+			<tr>
+				<th class="pkg-name">Name</th>
+				<th class="pkg-synopsis">Synopsis</th>
+			</tr>
+
+			
+			<tr>
+				<td colspan="2"><a href="..">..</a></td>
+			</tr>
+			
+
+			
+				
+					<tr>
+						<td class="pkg-name" style="padding-left: 0px;">
+							<a href="examples/">examples</a>
+						</td>
+						<td class="pkg-synopsis">
+							
+						</td>
+					</tr>
+				
+			
+		</table>
+	</div>
+
+
+	
+
+
+
+<div id="footer">
+Build version go1.5.1.<br>
+Except as <a href="https://developers.google.com/site-policies#restrictions">noted</a>,
+the content of this page is licensed under the
+Creative Commons Attribution 3.0 License,
+and code is licensed under a <a href="/LICENSE">BSD license</a>.<br>
+<a href="/doc/tos.html">Terms of Service</a> | 
+<a href="http://www.google.com/intl/en/policies/privacy/">Privacy Policy</a>
+</div>
+
+</div><!-- .container -->
+</div><!-- #page -->
+
+<!-- TODO(adonovan): load these from <head> using "defer" attribute? -->
+<script type="text/javascript" src="/lib/godoc/jquery.js"></script>
+<script type="text/javascript" src="/lib/godoc/jquery.treeview.js"></script>
+<script type="text/javascript" src="/lib/godoc/jquery.treeview.edit.js"></script>
+
+
+<script type="text/javascript" src="/lib/godoc/godocs.js"></script>
+
+</body>
+</html>
+
