@@ -8,7 +8,7 @@ import (
 	"os/signal"
 	"time"
 	"net/http/cookiejar"
-	"github.com/ronenmiz/appflinger-go"
+	"github.com/tversity/appflinger-go"
 )
 
 const (

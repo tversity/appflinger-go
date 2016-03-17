@@ -2,7 +2,7 @@ package main
 
 import (
 	"errors"
-	"github.com/ronenmiz/appflinger-go"
+	"github.com/tversity/appflinger-go"
 )
 
 type AppFlingerStub struct {
