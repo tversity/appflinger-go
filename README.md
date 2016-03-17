@@ -3,7 +3,7 @@ appflinger-go
 
 This is the official Go client SDK for AppFlinger (www.appflinger.com). It does not come with a full client implementation but rather it is just the client SDK along with some examples.
 
-There is also a C client SDK (available in binary form), a Javascript client SDK, and a C# client SDK, as well as a full client implementation for the Raspberry Pi (please contact TVersity to gain access to it). 
+There is also a C client SDK (available in binary form), a [Javascript client SDK](https://github.com/ronenmiz/appflinger-js), and a [C# client SDK](https://github.com/ronenmiz/appflinger-mediaroom), as well as a full client implementation for the Raspberry Pi (please contact TVersity to gain access to it). 
 
 The server side code is closed source and is available for licensing from TVersity, please contact us for more information.
 
@@ -32,4 +32,4 @@ This approach allows HTML5 TV apps, like the one at www.youtube.com/tv, to run i
 A cloud browser runs on a server and therefore does all the rendering and
 execution of web content on the server. The client tends to be a very
 lightweight implementation of a remote UI protocol of some sort. the W3C has a
-cloud browser task force with additional information[here](https://www.w3.org/2011/webtv/wiki/Main_Page/Cloud_Browser_TF).
+cloud browser task force with additional information [here](https://www.w3.org/2011/webtv/wiki/Main_Page/Cloud_Browser_TF).
