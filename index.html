@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
@@ -19,16 +19,16 @@
 </div><!-- #lowframe -->
 
 <div id="topbar" class="wide"><div class="container">
-<div class="top-heading" id="heading-wide"><a href="/">The Go Programming Language</a></div>
-<div class="top-heading" id="heading-narrow"><a href="/">Go</a></div>
+<div class="top-heading" id="heading-wide"><a href="https://godoc.org/">The Go Programming Language</a></div>
+<div class="top-heading" id="heading-narrow"><a href="https://godoc.org/">Go</a></div>
 <a href="#" id="menu-button"><span id="menu-button-arrow">&#9661;</span></a>
-<form method="GET" action="/search">
+<form method="GET" action="https://godoc.org/search">
 <div id="menu">
-<a href="/doc/">Documents</a>
-<a href="/pkg/">Packages</a>
-<a href="/project/">The Project</a>
-<a href="/help/">Help</a>
-<a href="/blog/">Blog</a>
+<a href="https://godoc.org/doc/">Documents</a>
+<a href="https://godoc.org/pkg/">Packages</a>
+<a href="https://godoc.org/project/">The Project</a>
+<a href="https://godoc.org/help/">Help</a>
+<a href="https://godoc.org/blog/">Blog</a>
 
 <input type="text" id="search" name="q" class="inactive" value="Search" placeholder="Search">
 </div>
@@ -163,7 +163,7 @@ The full code for the SDK along with the examples is available under: <a href="h
 			<p>
 			<span style="font-size:90%">
 			
-				<a href="/src/github.com/tversity/appflinger-go/appflinger.go">appflinger.go</a>
+				<a href="https://github.com/tversity/appflinger-go">appflinger.go</a>
 			
 			</span>
 			</p>
@@ -244,8 +244,8 @@ The full code for the SDK along with the examples is available under: <a href="h
 		
 			
 			
-			<h2 id="ControlChannelRoutine">func <a href="/src/github.com/tversity/appflinger-go/appflinger.go?s=10236:10386#L332">ControlChannelRoutine</a></h2>
-			<pre>func ControlChannelRoutine(cookieJar *<a href="/pkg/net/http/cookiejar/">cookiejar</a>.<a href="/pkg/net/http/cookiejar/#Jar">Jar</a>, serverProtocolHost <a href="/pkg/builtin/#string">string</a>, sessionId <a href="/pkg/builtin/#string">string</a>, appf <a href="#AppFlinger">AppFlinger</a>, shouldStop &lt;-chan <a href="/pkg/builtin/#bool">bool</a>) (err <a href="/pkg/builtin/#error">error</a>)</pre>
+			<h2 id="ControlChannelRoutine">func <a href="https://github.com/tversity/appflinger-go/blob/master/appflinger.go#LC342">ControlChannelRoutine</a></h2>
+			<pre>func ControlChannelRoutine(cookieJar *<a href="https://godoc.org/pkg/net/http/cookiejar/">cookiejar</a>.<a href="https://godoc.org/pkg/net/http/cookiejar/#Jar">Jar</a>, serverProtocolHost <a href="https://godoc.org/pkg/builtin/#string">string</a>, sessionId <a href="https://godoc.org/pkg/builtin/#string">string</a>, appf <a href="#AppFlinger">AppFlinger</a>, shouldStop &lt;-chan <a href="https://godoc.org/pkg/builtin/#bool">bool</a>) (err <a href="https://godoc.org/pkg/builtin/#error">error</a>)</pre>
 			<p>
 This function is intended to be executed as a go routine.
 It connects to the control channel of the given session using HTTP long polling and remains
@@ -259,8 +259,8 @@ The caller needs to implement the AppFlinger interface and pass it as an argumen
 		
 			
 			
-			<h2 id="SessionEvent">func <a href="/src/github.com/tversity/appflinger-go/appflinger.go?s=17223:17365#L591">SessionEvent</a></h2>
-			<pre>func SessionEvent(cookieJar *<a href="/pkg/net/http/cookiejar/">cookiejar</a>.<a href="/pkg/net/http/cookiejar/#Jar">Jar</a>, serverProtocolHost <a href="/pkg/builtin/#string">string</a>, sessionId <a href="/pkg/builtin/#string">string</a>, eventType <a href="/pkg/builtin/#string">string</a>, code <a href="/pkg/builtin/#int">int</a>, x <a href="/pkg/builtin/#int">int</a>, y <a href="/pkg/builtin/#int">int</a>) (err <a href="/pkg/builtin/#error">error</a>)</pre>
+			<h2 id="SessionEvent">func <a href="https://github.com/tversity/appflinger-go/blob/master/appflinger.go#LC601">SessionEvent</a></h2>
+			<pre>func SessionEvent(cookieJar *<a href="https://godoc.org/pkg/net/http/cookiejar/">cookiejar</a>.<a href="https://godoc.org/pkg/net/http/cookiejar/#Jar">Jar</a>, serverProtocolHost <a href="https://godoc.org/pkg/builtin/#string">string</a>, sessionId <a href="https://godoc.org/pkg/builtin/#string">string</a>, eventType <a href="https://godoc.org/pkg/builtin/#string">string</a>, code <a href="https://godoc.org/pkg/builtin/#int">int</a>, x <a href="https://godoc.org/pkg/builtin/#int">int</a>, y <a href="https://godoc.org/pkg/builtin/#int">int</a>) (err <a href="https://godoc.org/pkg/builtin/#error">error</a>)</pre>
 			<p>
 This function is used to inject input into a session.
 The arguments to this function are as per the descirption of the /osb/session/event API in
@@ -274,8 +274,8 @@ returned when the session was started.
 		
 			
 			
-			<h2 id="SessionStop">func <a href="/src/github.com/tversity/appflinger-go/appflinger.go?s=16606:16705#L572">SessionStop</a></h2>
-			<pre>func SessionStop(cookieJar *<a href="/pkg/net/http/cookiejar/">cookiejar</a>.<a href="/pkg/net/http/cookiejar/#Jar">Jar</a>, serverProtocolHost <a href="/pkg/builtin/#string">string</a>, sessionId <a href="/pkg/builtin/#string">string</a>) (err <a href="/pkg/builtin/#error">error</a>)</pre>
+			<h2 id="SessionStop">func <a href="https://github.com/tversity/appflinger-go/blob/master/appflinger.go#LC582">SessionStop</a></h2>
+			<pre>func SessionStop(cookieJar *<a href="https://godoc.org/pkg/net/http/cookiejar/">cookiejar</a>.<a href="https://godoc.org/pkg/net/http/cookiejar/#Jar">Jar</a>, serverProtocolHost <a href="https://godoc.org/pkg/builtin/#string">string</a>, sessionId <a href="https://godoc.org/pkg/builtin/#string">string</a>) (err <a href="https://godoc.org/pkg/builtin/#error">error</a>)</pre>
 			<p>
 This function is used to stop a session.
 The arguments to this function are as per the descirption of the /osb/session/stop API in
@@ -290,27 +290,27 @@ returned when the session was started.
 		
 			
 			
-			<h2 id="AppFlinger">type <a href="/src/github.com/tversity/appflinger-go/appflinger.go?s=2742:3516#L68">AppFlinger</a></h2>
+			<h2 id="AppFlinger">type <a href="https://github.com/tversity/appflinger-go/blob/master/appflinger.go#LC78">AppFlinger</a></h2>
 			<pre>type AppFlinger interface {
-    Load(url <a href="/pkg/builtin/#string">string</a>) (err <a href="/pkg/builtin/#error">error</a>)
-    CancelLoad() (err <a href="/pkg/builtin/#error">error</a>)
-    Pause() (err <a href="/pkg/builtin/#error">error</a>)
-    Play() (err <a href="/pkg/builtin/#error">error</a>)
-    Seek(time <a href="/pkg/builtin/#float64">float64</a>) (err <a href="/pkg/builtin/#error">error</a>)
-    GetPaused() (paused <a href="/pkg/builtin/#bool">bool</a>, err <a href="/pkg/builtin/#error">error</a>)
-    GetSeeking() (seeking <a href="/pkg/builtin/#bool">bool</a>, err <a href="/pkg/builtin/#error">error</a>)
-    GetDuration() (duration <a href="/pkg/builtin/#float64">float64</a>, err <a href="/pkg/builtin/#error">error</a>)
-    GetCurrentTime() (time <a href="/pkg/builtin/#float64">float64</a>, err <a href="/pkg/builtin/#error">error</a>)
-    GetNetworkState() (networkState <a href="/pkg/builtin/#int">int</a>, err <a href="/pkg/builtin/#error">error</a>)
-    GetReadyState() (readyState <a href="/pkg/builtin/#int">int</a>, err <a href="/pkg/builtin/#error">error</a>)
-    GetMaxTimeSeekable() (maxTimeSeekable <a href="/pkg/builtin/#float64">float64</a>, err <a href="/pkg/builtin/#error">error</a>)
-    SetRect(x <a href="/pkg/builtin/#uint">uint</a>, y <a href="/pkg/builtin/#uint">uint</a>, width <a href="/pkg/builtin/#uint">uint</a>, height <a href="/pkg/builtin/#uint">uint</a>) (err <a href="/pkg/builtin/#error">error</a>)
-    SetVisible(visible <a href="/pkg/builtin/#bool">bool</a>) (err <a href="/pkg/builtin/#error">error</a>)
-    SendMessage(message <a href="/pkg/builtin/#string">string</a>) (result <a href="/pkg/builtin/#string">string</a>, err <a href="/pkg/builtin/#error">error</a>)
-    OnPageLoad() (err <a href="/pkg/builtin/#error">error</a>)
-    OnAddressBarChanged(url <a href="/pkg/builtin/#string">string</a>) (err <a href="/pkg/builtin/#error">error</a>)
-    OnTitleChanged(title <a href="/pkg/builtin/#string">string</a>) (err <a href="/pkg/builtin/#error">error</a>)
-    OnPageClose() (err <a href="/pkg/builtin/#error">error</a>)
+    Load(url <a href="https://godoc.org/pkg/builtin/#string">string</a>) (err <a href="https://godoc.org/pkg/builtin/#error">error</a>)
+    CancelLoad() (err <a href="https://godoc.org/pkg/builtin/#error">error</a>)
+    Pause() (err <a href="https://godoc.org/pkg/builtin/#error">error</a>)
+    Play() (err <a href="https://godoc.org/pkg/builtin/#error">error</a>)
+    Seek(time <a href="https://godoc.org/pkg/builtin/#float64">float64</a>) (err <a href="https://godoc.org/pkg/builtin/#error">error</a>)
+    GetPaused() (paused <a href="https://godoc.org/pkg/builtin/#bool">bool</a>, err <a href="https://godoc.org/pkg/builtin/#error">error</a>)
+    GetSeeking() (seeking <a href="https://godoc.org/pkg/builtin/#bool">bool</a>, err <a href="https://godoc.org/pkg/builtin/#error">error</a>)
+    GetDuration() (duration <a href="https://godoc.org/pkg/builtin/#float64">float64</a>, err <a href="https://godoc.org/pkg/builtin/#error">error</a>)
+    GetCurrentTime() (time <a href="https://godoc.org/pkg/builtin/#float64">float64</a>, err <a href="https://godoc.org/pkg/builtin/#error">error</a>)
+    GetNetworkState() (networkState <a href="https://godoc.org/pkg/builtin/#int">int</a>, err <a href="https://godoc.org/pkg/builtin/#error">error</a>)
+    GetReadyState() (readyState <a href="https://godoc.org/pkg/builtin/#int">int</a>, err <a href="https://godoc.org/pkg/builtin/#error">error</a>)
+    GetMaxTimeSeekable() (maxTimeSeekable <a href="https://godoc.org/pkg/builtin/#float64">float64</a>, err <a href="https://godoc.org/pkg/builtin/#error">error</a>)
+    SetRect(x <a href="https://godoc.org/pkg/builtin/#uint">uint</a>, y <a href="https://godoc.org/pkg/builtin/#uint">uint</a>, width <a href="https://godoc.org/pkg/builtin/#uint">uint</a>, height <a href="https://godoc.org/pkg/builtin/#uint">uint</a>) (err <a href="https://godoc.org/pkg/builtin/#error">error</a>)
+    SetVisible(visible <a href="https://godoc.org/pkg/builtin/#bool">bool</a>) (err <a href="https://godoc.org/pkg/builtin/#error">error</a>)
+    SendMessage(message <a href="https://godoc.org/pkg/builtin/#string">string</a>) (result <a href="https://godoc.org/pkg/builtin/#string">string</a>, err <a href="https://godoc.org/pkg/builtin/#error">error</a>)
+    OnPageLoad() (err <a href="https://godoc.org/pkg/builtin/#error">error</a>)
+    OnAddressBarChanged(url <a href="https://godoc.org/pkg/builtin/#string">string</a>) (err <a href="https://godoc.org/pkg/builtin/#error">error</a>)
+    OnTitleChanged(title <a href="https://godoc.org/pkg/builtin/#string">string</a>) (err <a href="https://godoc.org/pkg/builtin/#error">error</a>)
+    OnPageClose() (err <a href="https://godoc.org/pkg/builtin/#error">error</a>)
 }</pre>
 			<p>
 The client needs to implement this interface in order to process the control channel commands.
@@ -333,9 +333,9 @@ describes the control channel operation and its various commands in detail.
 		
 			
 			
-			<h2 id="StartSessionResp">type <a href="/src/github.com/tversity/appflinger-go/appflinger.go?s=2412:2462#L61">StartSessionResp</a></h2>
+			<h2 id="StartSessionResp">type <a href="https://github.com/tversity/appflinger-go/blob/master/appflinger.go#LC71">StartSessionResp</a></h2>
 			<pre>type StartSessionResp struct {
-    SessionID <a href="/pkg/builtin/#string">string</a>
+    SessionID <a href="https://godoc.org/pkg/builtin/#string">string</a>
 }</pre>
 			<p>
 The struct returned after successfully starting a session.
@@ -353,9 +353,9 @@ It holds the information pertaining to the created browser session.
 
 			
 				
-				<h3 id="SessionStart">func <a href="/src/github.com/tversity/appflinger-go/appflinger.go?s=15252:15464#L519">SessionStart</a></h3>
-				<pre>func SessionStart(serverProtocolHost <a href="/pkg/builtin/#string">string</a>, browserURL <a href="/pkg/builtin/#string">string</a>, pullMode <a href="/pkg/builtin/#bool">bool</a>, isVideoPassthru <a href="/pkg/builtin/#bool">bool</a>, browserUIOutputURL <a href="/pkg/builtin/#string">string</a>,
-    videoStreamURI <a href="/pkg/builtin/#string">string</a>) (rsp *<a href="#StartSessionResp">StartSessionResp</a>, cookieJar *<a href="/pkg/net/http/cookiejar/">cookiejar</a>.<a href="/pkg/net/http/cookiejar/#Jar">Jar</a>, err <a href="/pkg/builtin/#error">error</a>)</pre>
+				<h3 id="SessionStart">func <a href="https://github.com/tversity/appflinger-go/blob/master/appflinger.go#LC529">SessionStart</a></h3>
+				<pre>func SessionStart(serverProtocolHost <a href="https://godoc.org/pkg/builtin/#string">string</a>, browserURL <a href="https://godoc.org/pkg/builtin/#string">string</a>, pullMode <a href="https://godoc.org/pkg/builtin/#bool">bool</a>, isVideoPassthru <a href="https://godoc.org/pkg/builtin/#bool">bool</a>, browserUIOutputURL <a href="https://godoc.org/pkg/builtin/#string">string</a>,
+    videoStreamURI <a href="https://godoc.org/pkg/builtin/#string">string</a>) (rsp *<a href="#StartSessionResp">StartSessionResp</a>, cookieJar *<a href="https://godoc.org/pkg/net/http/cookiejar/">cookiejar</a>.<a href="https://godoc.org/pkg/net/http/cookiejar/#Jar">Jar</a>, err <a href="https://godoc.org/pkg/builtin/#error">error</a>)</pre>
 				<p>
 This function is used to start a new session or navigate an existing one to a new address.
 The arguments to this function are as per the descirption of the /osb/session/start API in
@@ -426,8 +426,8 @@ Build version go1.5.1.<br>
 Except as <a href="https://developers.google.com/site-policies#restrictions">noted</a>,
 the content of this page is licensed under the
 Creative Commons Attribution 3.0 License,
-and code is licensed under a <a href="/LICENSE">BSD license</a>.<br>
-<a href="/doc/tos.html">Terms of Service</a> | 
+and code is licensed under a <a href="https://github.com/tversity/appflinger-go/blob/master/LICENSE">Apache 2.0 license</a>.<br>
+<a href="https://godoc.org//doc/tos.html">Terms of Service</a> | 
 <a href="http://www.google.com/intl/en/policies/privacy/">Privacy Policy</a>
 </div>
 
