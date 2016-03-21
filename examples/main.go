@@ -149,5 +149,5 @@ func main() {
 	fmt.Println("Exiting...")
 	close(shouldStop)
 	<-done
-	log.Println("Done")
+	fmt.Println("Done")
 }
