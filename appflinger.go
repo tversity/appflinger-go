@@ -19,18 +19,18 @@
 package appflinger
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"golang.org/x/net/publicsuffix"
 	"io"
 	"log"
-	"golang.org/x/net/publicsuffix"
 	"net/http"
 	"net/http/cookiejar"
-	"crypto/tls"
 	"net/url"
 	"strconv"
 	"strings"
-	"fmt"
 )
 
 const (
@@ -51,11 +51,11 @@ const (
 	READY_STATE_HAVE_ENOUGH_DATA  = 4
 
 	// Server API endpoints (private constants)
-	_SESSION_START_URL = "${PROTHOST}/osb/session/start?browser_url=${BURL}"
-	_SESSION_STOP_URL  = "${PROTHOST}/osb/session/stop?session_id=${SID}"
-	_SESSION_EVENT_URL = "${PROTHOST}/osb/session/event?session_id=${SID}&type=${TYPE}"
+	_SESSION_START_URL   = "${PROTHOST}/osb/session/start?browser_url=${BURL}"
+	_SESSION_STOP_URL    = "${PROTHOST}/osb/session/stop?session_id=${SID}"
+	_SESSION_EVENT_URL   = "${PROTHOST}/osb/session/event?session_id=${SID}&type=${TYPE}"
 	_SESSION_CONTROL_URL = "${PROTHOST}/osb/session/control?session_id=${SID}"
-	
+
 	// Keyboard codes for injecting events
 	KEY_UP        = 0x26
 	KEY_DOWN      = 0x28
@@ -104,11 +104,11 @@ type controlChannelRequest struct {
 
 	// All possible fields
 
-	URL     string  // used in load() and in onAddressBarChanged()
-	Title   string  // used in onTitleChanged()
-	Message string  // used in sendMessage()
+	URL     string // used in load() and in onAddressBarChanged()
+	Title   string // used in onTitleChanged()
+	Message string // used in sendMessage()
 	Time    string // used in seek()
-	Visible string  // used in setVisible()
+	Visible string // used in setVisible()
 
 	// used in setRect
 	X      string
@@ -129,7 +129,7 @@ func marshalResponse(result map[string]interface{}, respErr error) (resp string,
 	if respErr == nil {
 		result["result"] = "OK"
 		if result["message"] == nil {
-			result["message"] = ""	
+			result["message"] = ""
 		}
 	} else {
 		result["result"] = "ERROR"
@@ -362,7 +362,7 @@ func ControlChannelRoutine(cookieJar *cookiejar.Jar, serverProtocolHost string, 
 
 	var client http.Client
 	if cookieJar != nil {
-		client = http.Client{Jar: cookieJar, Transport: tr}	
+		client = http.Client{Jar: cookieJar, Transport: tr}
 	} else {
 		client = http.Client{Transport: tr}
 	}
@@ -383,8 +383,8 @@ func ControlChannelRoutine(cookieJar *cookiejar.Jar, serverProtocolHost string, 
 			log.Println(err)
 			return
 		}
-		
-		httpReq.Header.Set("Content-Type", "text/json")			
+
+		httpReq.Header.Set("Content-Type", "text/json")
 
 		// Make a long polling request to the control channel in order to process RPC requests (JSON formatted):
 		// - the first invocation has &reset=1 and no payload
@@ -399,17 +399,17 @@ func ControlChannelRoutine(cookieJar *cookiejar.Jar, serverProtocolHost string, 
 				log.Println(err)
 			}
 			errChan <- err
-		} ()
-			
+		}()
+
 		// Wait for the http request to complete
 		select {
-        	case <-shouldStop:
-            	tr.CancelRequest(httpReq)
+		case <-shouldStop:
+			tr.CancelRequest(httpReq)
+			return
+		case err = <-errChan:
+			if err != nil {
 				return
-        	case err = <- errChan:
-				if err != nil {
-					return
-				}
+			}
 		}
 
 		if httpRes.StatusCode != http.StatusOK {
@@ -432,13 +432,13 @@ func ControlChannelRoutine(cookieJar *cookiejar.Jar, serverProtocolHost string, 
 			if err == io.EOF {
 				err = nil
 				break
-			} else if err != nil {				
-				// Check if need to abort in a non blocking way		
+			} else if err != nil {
+				// Check if need to abort in a non blocking way
 				select {
-					case <-shouldStop:
-						err = nil
-						return
-					default:
+				case <-shouldStop:
+					err = nil
+					return
+				default:
 				}
 
 				// This is most likely a timeout
@@ -460,14 +460,14 @@ func ControlChannelRoutine(cookieJar *cookiejar.Jar, serverProtocolHost string, 
 		}
 		httpRes.Body.Close()
 	}
-	
+
 	return
 }
 
 func printCookies(cookieJar *cookiejar.Jar, uri string) {
-	u,_ := url.Parse(uri)
-	for _,c := range cookieJar.Cookies(u) {
-		log.Println(c)	
+	u, _ := url.Parse(uri)
+	for _, c := range cookieJar.Cookies(u) {
+		log.Println(c)
 	}
 }
 
@@ -476,14 +476,14 @@ func apiReq(cookieJar *cookiejar.Jar, uri string, resp interface{}) (err error) 
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
 	defer tr.CloseIdleConnections()
-	
+
 	var client http.Client
 	if cookieJar != nil {
-		client = http.Client{Jar: cookieJar, Transport: tr}	
+		client = http.Client{Jar: cookieJar, Transport: tr}
 	} else {
 		client = http.Client{Transport: tr}
 	}
-	
+
 	var res *http.Response
 	res, err = client.Get(uri)
 	if err != nil {
@@ -525,21 +525,21 @@ func apiReq(cookieJar *cookiejar.Jar, uri string, resp interface{}) (err error) 
 // a Go cookie jar, which needs to be used in all subsequent API requests for this session. Note that Cookies
 // are important for load balancing stickyness such that a session start request is made without any cookies
 // but may return a cookie when a load balancer is used. This returned cookie must be passed in any subsequent
-// requests that need to use the session so that the load balancer will hit the correct server. 
-func SessionStart(serverProtocolHost string, browserURL string,  pullMode bool, isVideoPassthru bool, browserUIOutputURL string,
-videoStreamURI string) (rsp *StartSessionResp, cookieJar *cookiejar.Jar, err error) {
+// requests that need to use the session so that the load balancer will hit the correct server.
+func SessionStart(serverProtocolHost string, browserURL string, pullMode bool, isVideoPassthru bool, browserUIOutputURL string,
+	videoStreamURI string) (rsp *StartSessionResp, cookieJar *cookiejar.Jar, err error) {
 	rsp = nil
 	cookieJar = nil
 
 	// Create the cookie jar first
-	 options := cookiejar.Options{
-        PublicSuffixList: publicsuffix.List,
-    }
-    cookieJar, err = cookiejar.New(&options)
-    if err != nil {
+	options := cookiejar.Options{
+		PublicSuffixList: publicsuffix.List,
+	}
+	cookieJar, err = cookiejar.New(&options)
+	if err != nil {
 		cookieJar = nil
-        return
-    }
+		return
+	}
 
 	// Construct the URL
 	uri := _SESSION_START_URL
@@ -603,7 +603,7 @@ func SessionEvent(cookieJar *cookiejar.Jar, serverProtocolHost string, sessionId
 	uri := _SESSION_EVENT_URL
 	eventType = strings.ToLower(eventType)
 	if eventType == "key" {
-		uri += "&code=${KEYCODE}"	
+		uri += "&code=${KEYCODE}"
 	} else if eventType == "click" {
 		uri += "&x=${X}&y=${Y}"
 	} else {

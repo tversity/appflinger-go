@@ -105,7 +105,7 @@ func (self *AppFlingerStub) GetCurrentTime() (time float64, err error) {
 		time = 0
 	} else {
 		err = errors.New("No video loaded")
-	}	
+	}
 	return
 }
 
@@ -125,7 +125,7 @@ func (self *AppFlingerStub) GetReadyState() (readyState int, err error) {
 		readyState = appflinger.READY_STATE_HAVE_ENOUGH_DATA
 	} else {
 		err = errors.New("No video loaded")
-	}	
+	}
 	return
 }
 
@@ -135,7 +135,7 @@ func (self *AppFlingerStub) GetMaxTimeSeekable() (maxTimeSeekable float64, err e
 		maxTimeSeekable = 0
 	} else {
 		err = errors.New("No video loaded")
-	}	
+	}
 	return
 }
 
@@ -144,7 +144,7 @@ func (self *AppFlingerStub) SetRect(x uint, y uint, width uint, height uint) (er
 		err = nil
 	} else {
 		err = errors.New("No video loaded")
-	}	
+	}
 	return
 }
 
@@ -153,7 +153,7 @@ func (self *AppFlingerStub) SetVisible(visible bool) (err error) {
 		err = nil
 	} else {
 		err = errors.New("No video loaded")
-	}	
+	}
 	return
 }
 

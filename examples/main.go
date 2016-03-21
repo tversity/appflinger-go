@@ -7,17 +7,17 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/tversity/appflinger-go"
 	"log"
+	"net/http/cookiejar"
 	"os"
 	"os/signal"
 	"time"
-	"net/http/cookiejar"
-	"github.com/tversity/appflinger-go"
 )
 
 const (
 	DELAY_BETWEEN_KEYS = 500 * time.Millisecond
-	DELAY_TO_VIEW = 2 * time.Second
+	DELAY_TO_VIEW      = 2 * time.Second
 )
 
 // Initialized from command line arguments
@@ -41,12 +41,12 @@ func initVars() {
 	} else if serverPort == "443" {
 		serverProtocolHost = "https://" + serverIP
 	} else {
-		serverProtocolHost = "http://" + serverIP + ":" + serverPort	
+		serverProtocolHost = "http://" + serverIP + ":" + serverPort
 	}
 }
 
 func StartSession() {
-	rsp, cj, err := appflinger.SessionStart(serverProtocolHost, browserURL,  true, true, "", "")
+	rsp, cj, err := appflinger.SessionStart(serverProtocolHost, browserURL, true, true, "", "")
 	if err != nil {
 		log.Fatal("Failed to start session: ", err)
 	}
@@ -66,7 +66,7 @@ func SendEvent(code int, delay time.Duration) {
 	if err != nil {
 		log.Fatal("Failed to send event: ", sessionId, err)
 	}
-	
+
 	if delay != 0 {
 		time.Sleep(delay)
 	}
@@ -82,19 +82,19 @@ func ControlChannel(shouldStop chan bool) {
 	}
 }
 
-func RunSession(shouldStop chan bool, done chan bool) () {
+func RunSession(shouldStop chan bool, done chan bool) {
 	StartSession()
 
 	fmt.Println("New session:", sessionId)
 
 	// Wait till session is fully started
 	select {
-		case <- shouldStop:
-			StopSession()
-			done <- true
-			return
-		case <-time.After(5 * time.Second):
-    }
+	case <-shouldStop:
+		StopSession()
+		done <- true
+		return
+	case <-time.After(5 * time.Second):
+	}
 
 	fmt.Println("Running session:", sessionId)
 
@@ -103,14 +103,14 @@ func RunSession(shouldStop chan bool, done chan bool) () {
 
 	// Simulate key presses in a loop
 	for {
-			
-		// Check if need to abort in a non blocking way		
+
+		// Check if need to abort in a non blocking way
 		select {
-			case <- shouldStop:
-				StopSession()
-				done <- true
-				return
-			default:
+		case <-shouldStop:
+			StopSession()
+			done <- true
+			return
+		default:
 		}
 
 		// A sequence of navigation keys
@@ -122,7 +122,7 @@ func RunSession(shouldStop chan bool, done chan bool) () {
 		// Some delay representing a user reading/looking before continuing the interaction
 		time.Sleep(DELAY_TO_VIEW)
 	}
-	
+
 	fmt.Println("Stopping session:", sessionId)
 	StopSession()
 	done <- true
@@ -143,11 +143,11 @@ func main() {
 	// Wait for Ctrl-C
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
-	<- c
-	
+	<-c
+
 	// Cleanup and exit
 	fmt.Println("Exiting...")
 	close(shouldStop)
-	<- done
+	<-done
 	log.Println("Done")
 }
