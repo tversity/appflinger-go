@@ -160,6 +160,7 @@ type controlChannelRequest struct {
 	Height string
 }
 
+// LoadResourceResult is the returned result by LoadResource() in the AppflingerListener interface
 type LoadResourceResult struct {
 	Code         string
 	Headers      string
@@ -168,6 +169,7 @@ type LoadResourceResult struct {
 	Payload      []byte
 }
 
+// GetBufferedResult is the returned result by GetBuffered() in the AppflingerListener interface
 type GetBufferedResult struct {
 	Start []float64
 	End   []float64
