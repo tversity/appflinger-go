@@ -12,7 +12,7 @@ The server side code is closed source and is available for licensing from TVersi
 
 AppFlinger (www.appflinger.com) is a [cloud browser](https://www.w3.org/TR/cloud-browser-arch/), i.e. it is an HTML5 browser (based on [Chromium](https://www.chromium.org/Home)) running in the cloud and delivered to client devices as a video or image stream.
 
-AppFlinger is a server side technology that can be deployed in the cloud or on premise and be utilized for delivering a consistent HTML5 content experience to any device, in a hardware agnostic manner.
+AppFlinger is a server side technology that can be deployed in the cloud or on-premise and be utilized for delivering a consistent HTML5 content experience to any device, in a hardware agnostic manner.
 
 AppFlinger physically [isolates](https://en.wikipedia.org/wiki/Browser_isolation) edge devices and edge networks from the content they are rendering, thus enabling next generation security while delivering on the promise of any content on any device.
 
