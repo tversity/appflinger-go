@@ -947,9 +947,6 @@ func SessionStart(serverProtocolHost string, sessionId string, browserURL string
 }
 
 // SessionStop is used to stop a session.
-// The arguments to this function are as per the descirption of the /osb/session/stop API in
-// the "AppFlinger API and Client Integration Guide", with the exception of the cookie jar which was
-// returned when the session was started.
 func SessionStop(ctx *SessionContext) (err error) {
 
 	// Stop and Wait for ui streaming to complete
@@ -982,9 +979,6 @@ func SessionStop(ctx *SessionContext) (err error) {
 }
 
 // SessionSendEvent is used to inject input into a session.
-// The arguments to this function are as per the descirption of the /osb/session/event API in
-// the "AppFlinger API and Client Integration Guide", with the exception of the cookie jar which was
-// returned when the session was started.
 func SessionSendEvent(ctx *SessionContext, eventType string, code int, x int, y int) (err error) {
 	// Construct the URL
 	uri := _SESSION_EVENT_URL
