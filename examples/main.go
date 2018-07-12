@@ -7,17 +7,20 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/tversity/appflinger-go"
 	"log"
-	"net/http/cookiejar"
 	"os"
 	"os/signal"
 	"time"
+
+	"github.com/tversity/appflinger-go"
 )
 
 const (
-	DELAY_BETWEEN_KEYS = 500 * time.Millisecond
-	DELAY_TO_VIEW      = 2 * time.Second
+	// delayBetweenKeys is used when simulating user navigation
+	delayBetweenKeys = 500 * time.Millisecond
+
+	// delayToView is used when simulating user pause to view the content it navigated to
+	delayToView = 2 * time.Second
 )
 
 // Initialized from command line arguments
@@ -26,8 +29,7 @@ var serverIP string
 var browserURL string
 
 var serverProtocolHost string // server IP : server port
-var sessionId string
-var cookieJar *cookiejar.Jar
+var sessionCtx *appflinger.SessionContext
 
 func init() {
 	flag.StringVar(&serverPort, "port", "8080", "The server port")
@@ -46,25 +48,25 @@ func initVars() {
 }
 
 func StartSession() {
-	rsp, cj, err := appflinger.SessionStart(serverProtocolHost, browserURL, true, true, "", "")
+	var err error
+	stub := NewAppflingerListenerStub()
+	sessionCtx, err = appflinger.SessionStart(serverProtocolHost, "", browserURL, true, true, "", "", stub)
 	if err != nil {
 		log.Fatal("Failed to start session: ", err)
 	}
-	cookieJar = cj
-	sessionId = rsp.SessionID
 }
 
 func StopSession() {
-	err := appflinger.SessionStop(cookieJar, serverProtocolHost, sessionId)
+	err := appflinger.SessionStop(sessionCtx)
 	if err != nil {
-		log.Fatal("Failed to stop session: ", sessionId, err)
+		log.Fatal("Failed to stop session: ", sessionCtx.SessionId, err)
 	}
 }
 
 func SendEvent(code int, delay time.Duration) {
-	err := appflinger.SessionEvent(cookieJar, serverProtocolHost, sessionId, "key", code, 0, 0)
+	err := appflinger.SessionSendEvent(sessionCtx, "key", code, 0, 0)
 	if err != nil {
-		log.Fatal("Failed to send event: ", sessionId, err)
+		log.Fatal("Failed to send event: ", sessionCtx.SessionId, err)
 	}
 
 	if delay != 0 {
@@ -72,20 +74,10 @@ func SendEvent(code int, delay time.Duration) {
 	}
 }
 
-func ControlChannel(shouldStop chan bool) {
-	// Use a stub implementation of control channel callbacks used for testing / demonstration
-	// A real client implementation will need to replace the stub with a complete implementation
-	stub := NewAppFlingerStub()
-	err := appflinger.ControlChannelRoutine(cookieJar, serverProtocolHost, sessionId, stub, shouldStop)
-	if err != nil {
-		log.Fatal("Failed to connect to control channel with error: ", err)
-	}
-}
-
 func RunSession(shouldStop chan bool, done chan bool) {
 	StartSession()
 
-	fmt.Println("New session:", sessionId)
+	fmt.Println("New session:", sessionCtx.SessionId)
 
 	// Wait till session is fully started
 	select {
@@ -96,10 +88,7 @@ func RunSession(shouldStop chan bool, done chan bool) {
 	case <-time.After(5 * time.Second):
 	}
 
-	fmt.Println("Running session:", sessionId)
-
-	// Control channel implementation
-	go ControlChannel(shouldStop)
+	fmt.Println("Running session:", sessionCtx.SessionId)
 
 	// Simulate key presses in a loop
 	for {
@@ -114,16 +103,16 @@ func RunSession(shouldStop chan bool, done chan bool) {
 		}
 
 		// A sequence of navigation keys
-		SendEvent(appflinger.KEY_RIGHT, DELAY_BETWEEN_KEYS)
-		SendEvent(appflinger.KEY_DOWN, DELAY_BETWEEN_KEYS)
-		SendEvent(appflinger.KEY_UP, DELAY_BETWEEN_KEYS)
-		SendEvent(appflinger.KEY_LEFT, DELAY_BETWEEN_KEYS)
+		SendEvent(appflinger.KEY_RIGHT, delayBetweenKeys)
+		SendEvent(appflinger.KEY_DOWN, delayBetweenKeys)
+		SendEvent(appflinger.KEY_UP, delayBetweenKeys)
+		SendEvent(appflinger.KEY_LEFT, delayBetweenKeys)
 
 		// Some delay representing a user reading/looking before continuing the interaction
-		time.Sleep(DELAY_TO_VIEW)
+		time.Sleep(delayToView)
 	}
 
-	fmt.Println("Stopping session:", sessionId)
+	fmt.Println("Stopping session:", sessionCtx.SessionId)
 	StopSession()
 	done <- true
 	return
