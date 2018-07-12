@@ -253,7 +253,7 @@ func (self *AppflingerListenerStub) OnPageClose() (err error) {
 	return
 }
 
-func (self *AppflingerListenerStub) OnUIFrame(isKeyFrame bool, idx int, pts int, dts int, data []byte) (err error) {
+func (self *AppflingerListenerStub) OnUIFrame(isCodecConfig bool, isKeyFrame bool, idx int, pts int, dts int, data []byte) (err error) {
 	err = nil
 	return
 }
