@@ -8,12 +8,12 @@
 //  - Start/stop a session
 //  - Inject input to a session
 //  - Control channel implementation using HTTP long polling
+//  - UI video streaming and demuxing
 //
-// The client needs to implement the AppFlinger interface in order to process the control channel commands.
-// An example is available under examples/stub.go which is just a stub implementation of the AppFlinger interface.
+// The client needs to implement the AppFlingerListener interface in order to process the control channel commands.
+// An example is available under examples/stub.go which is just a stub implementation of the AppFlingerListener interface.
 // This stub is used by examples/main.go, which illustrates how to use the client SDK. It starts a session,
-// connects to its control channel and injects input in a loop until interrupted by the user, at which point
-// the session is stopped.
+// and injects input in a loop until interrupted by the user, at which point the session is stopped.
 //
 // The full code for the SDK along with the examples is available under: https://github.com/tversity/appflinger-go.
 package appflinger
@@ -73,6 +73,7 @@ const (
 	KEY_BACKSPACE = 0x8
 	KEY_ESCAPE    = 0x1b
 
+	// Media formats supported for UI stream
 	UI_FMT_TS_H264  = "mp2t;h264"
 	UI_FMT_MP4_H264 = "mp4;h264"
 	UI_FMT_WEBM_VP8 = "webm;vp8"
@@ -1167,8 +1168,12 @@ func uiStreamRoutine(ctx *SessionContext, uri string) {
 }
 
 // SessionUIStreamStart is used to start streaming the UI, frames will be passed to OnUIFrame() in the AppFlinger listener
-func SessionUIStreamStart(ctx *SessionContext, fmt string, tsDiscon bool, bitrate int) (err error) {
-	uri, e := SessionGetUIURL(ctx, fmt, tsDiscon, bitrate)
+func SessionUIStreamStart(ctx *SessionContext, format string, tsDiscon bool, bitrate int) (err error) {
+	if format != UI_FMT_TS_H264 {
+		return fmt.Errorf("Only format %s is supported by the SDK", UI_FMT_TS_H264)
+	}
+
+	uri, e := SessionGetUIURL(ctx, format, tsDiscon, bitrate)
 	if e != nil {
 		return e
 	}
