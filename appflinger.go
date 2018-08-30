@@ -234,6 +234,10 @@ type AppflingerListener interface {
 	OnUIFrame(isCodecConfig bool, isKeyFrame bool, idx int, pts int, dts int, data []byte) (err error)
 }
 
+var (
+	ErrInterrupted = errors.New("Aborting due to interrupt")
+)
+
 func replaceVars(str string, vars []string, vals []string) (result string) {
 	result = str
 	for i := range vars {
@@ -662,6 +666,7 @@ func controlChannelRun(ctx *SessionContext, appf AppflingerListener) (err error)
 		case <-ctx.shouldStopSession:
 			tr.CancelRequest(httpReq)
 			ctx.isDone <- true
+			err = ErrInterrupted
 			return
 		case err = <-errChan:
 			if err != nil {
@@ -697,6 +702,7 @@ func controlChannelRun(ctx *SessionContext, appf AppflingerListener) (err error)
 		case <-ctx.shouldStopSession:
 			httpRes.Body.Close()
 			ctx.isDone <- true
+			err = ErrInterrupted
 			return
 		case err = <-errChan:
 			break
@@ -727,7 +733,7 @@ func controlChannelRun(ctx *SessionContext, appf AppflingerListener) (err error)
 			// Check if need to abort in a non blocking way
 			select {
 			case <-ctx.shouldStopSession:
-				err = nil
+				err = ErrInterrupted
 				httpRes.Body.Close()
 				ctx.isDone <- true
 				return
@@ -783,9 +789,7 @@ func printCookies(cookieJar *cookiejar.Jar, uri string) {
 	}
 }
 
-func httpGet(cookieJar *cookiejar.Jar, uri string, shouldStop chan bool) (reader io.ReadCloser, err error) {
-	reader = nil
-
+func httpGet(cookieJar *cookiejar.Jar, uri string, shouldStop chan bool) (io.ReadCloser, error) {
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
@@ -798,6 +802,7 @@ func httpGet(cookieJar *cookiejar.Jar, uri string, shouldStop chan bool) (reader
 		client = http.Client{Transport: tr}
 	}
 
+	var err error
 	var httpReq *http.Request
 	var httpRes *http.Response
 	httpReq, err = http.NewRequest("GET", uri, nil)
@@ -819,24 +824,24 @@ func httpGet(cookieJar *cookiejar.Jar, uri string, shouldStop chan bool) (reader
 		select {
 		case <-shouldStop:
 			tr.CancelRequest(httpReq)
-			return
+			return nil, ErrInterrupted
 		case err = <-errChan:
 			if err != nil {
-				return
+				return nil, err
 			}
 		}
 	} else {
 		httpRes, err = client.Do(httpReq)
 		if err != nil {
 			err = fmt.Errorf("HTTP request failed with error: %v, uri: %s", err, uri)
-			return
+			return nil, err
 		}
 	}
 
 	if httpRes.StatusCode != http.StatusOK {
 		err = fmt.Errorf("HTTP request failed with status: %s, uri: %s", httpRes.Status, uri)
 		httpRes.Body.Close()
-		return
+		return nil, err
 	}
 
 	return httpRes.Body, nil
@@ -872,7 +877,7 @@ func apiReq(cookieJar *cookiejar.Jar, uri string, shouldStop chan bool, resp int
 
 func controlChannelRoutine(ctx *SessionContext, appf AppflingerListener) {
 	err := controlChannelRun(ctx, appf)
-	if err != nil {
+	if err != nil && err != ErrInterrupted {
 		log.Println("Failed to connect to control channel with error: ", err)
 	}
 }
@@ -1093,6 +1098,7 @@ func uiStream(ctx *SessionContext, uri string) (err error) {
 	reader, err = httpGet(ctx.CookieJar, uri, ctx.shouldStopUI)
 	if err != nil {
 		err = fmt.Errorf("Failed HTTP request for UI streaming: %v", err)
+		return
 	}
 	defer reader.Close()
 
@@ -1140,6 +1146,7 @@ func uiStream(ctx *SessionContext, uri string) (err error) {
 		// Wait for reading from the http request to complete
 		select {
 		case <-ctx.shouldStopUI:
+			err = ErrInterrupted
 			return
 		case err = <-errChan:
 			if err != nil {
@@ -1156,7 +1163,7 @@ func uiStream(ctx *SessionContext, uri string) (err error) {
 
 func uiStreamRoutine(ctx *SessionContext, uri string) {
 	err := uiStream(ctx, uri)
-	if err != nil {
+	if err != nil && err != ErrInterrupted {
 		log.Println("Failed to stream ui with error: ", err)
 	}
 	ctx.isUIStreaming = false
