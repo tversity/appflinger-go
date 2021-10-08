@@ -415,7 +415,6 @@ func processRPCRequest(req *controlChannelRequest, payload []byte, appf Appfling
 	result["requestId"] = req.RequestId
 	var resultPayload []byte = nil
 
-	log.Println("============>", req.Service)
 	if req.Service == "load" {
 		//log.Println(fmt.Sprintf("service: %s -- %s", req.Service, req.URL))
 		if appf != nil {
