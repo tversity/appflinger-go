@@ -58,11 +58,12 @@ const (
 	READY_STATE_HAVE_ENOUGH_DATA  = 4
 
 	// Server API endpoints (private constants)
-	_SESSION_START_URL   = "${PROTHOST}/osb/session/start?browser_url=${BURL}"
-	_SESSION_STOP_URL    = "${PROTHOST}/osb/session/stop?session_id=${SID}"
-	_SESSION_EVENT_URL   = "${PROTHOST}/osb/session/event?session_id=${SID}&type=${TYPE}"
-	_SESSION_CONTROL_URL = "${PROTHOST}/osb/session/control?session_id=${SID}"
-	_SESSION_UI_URL      = "${PROTHOST}/osb/session/ui?session_id=${SID}&fmt=${FMT}&ts_discon=${TSDISCON}"
+	_SESSION_START_URL            = "${PROTHOST}/osb/session/start?browser_url=${BURL}"
+	_SESSION_STOP_URL             = "${PROTHOST}/osb/session/stop?session_id=${SID}"
+	_SESSION_EVENT_URL            = "${PROTHOST}/osb/session/event?session_id=${SID}&type=${TYPE}"
+	_SESSION_CONTROL_URL          = "${PROTHOST}/osb/session/control?session_id=${SID}"
+	_SESSION_CONTROL_RESPONSE_URL = "${PROTHOST}/osb/session/control/response?session_id=${SID}"
+	_SESSION_UI_URL               = "${PROTHOST}/osb/session/ui?session_id=${SID}&fmt=${FMT}&ts_discon=${TSDISCON}"
 
 	// Keyboard codes for injecting events
 	KEY_UP        = 0x26
@@ -82,6 +83,19 @@ const (
 	UI_FMT_MPD_WEBM = "mpd;webm"
 	UI_FMT_JPEG     = "jpeg"
 	UI_FMT_PNG      = "png"
+
+	// MSE AppendMode enum
+	MSE_APPEND_MODE_SEGMENTS = 0
+	MSE_APPEND_MODE_SEQUENCE = 1
+
+	// EME MediaKeysRequirement enum
+	EME_MEDIA_KEYS_REQUIRED    = "required"
+	EME_MEDIA_KEYS_OPTIONAL    = "optional"
+	EME_MEDIA_KEYS_NOT_ALLOWED = "not-allowed"
+
+	// EME MediaKeySessionType enum
+	EME_MEDIA_KEYS_SESSION_TEMPORARY          = "temporary"
+	EME_MEDIA_KEYS_SESSION_PERSISTENT_LICENSE = "persistent-license"
 
 	// Do not read more than this number of bytes as a safety mechanism against attacks, etc.
 	_HTTP_MAX_RESPONSE_SIZE = 10000000
@@ -145,6 +159,19 @@ type controlChannelRequest struct {
 	BufferOffset      string
 	BufferLength      string
 
+	// Used in setAppendMode()
+	Mode string
+
+	// Used in setAppendTimestampOffset()
+	TimestampOffset string
+
+	// Used in removeBufferRange()
+	Start string
+	End   string
+
+	// Used in changeSourceBufferType()
+	MimeType string
+
 	// Used in loadResource()
 	ResourceId     string
 	Url            string
@@ -160,6 +187,38 @@ type controlChannelRequest struct {
 	Height string
 }
 
+type VideoStateChangeNotifcation struct {
+	Type         string  `json:"type"` // "videostatechange"
+	ReadyState   int     `json:"readyState"`
+	NetworkState int     `json:"networkState"`
+	Paused       string  `json:"paused"`
+	Seeking      string  `json:"seeking"`
+	Duration     float64 `json:"duration"`
+	Time         float64 `json:"time"`
+	VideoWidth   int     `json:"videoWidth"`
+	VideoHeight  int     `json:"videoHeight"`
+}
+
+// MediaKeySystemMediaCapability as per EME spec
+type EMEMediaKeySystemMediaCapability struct {
+	ContentType string
+	Robustness  string
+}
+
+// MediaKeySystemConfiguration as per EME spec
+type EMEMediaKeySystemConfiguration struct {
+	Label                 string
+	InitDataTypes         []string
+	AudioCapabilities     []EMEMediaKeySystemMediaCapability
+	VideoCapabilities     []EMEMediaKeySystemMediaCapability
+	DistinctiveIdentifier string   // One of EME_MEDIA_KEYS_REQUIRED, EME_MEDIA_KEYS_OPTIONAL, EME_MEDIA_KEYS_NOT_ALLOWED
+	PersistentState       string   // One of EME_MEDIA_KEYS_REQUIRED, EME_MEDIA_KEYS_OPTIONAL, EME_MEDIA_KEYS_NOT_ALLOWED
+	SessionTypes          []string // Array values are one of EME_MEDIA_KEYS_SESSION_TEMPORARY, EME_MEDIA_KEYS_SESSION_PERSISTENT_LICENSE
+}
+
+// RequestKeySystemResult is the returned result by RequestKeySystem()
+type RequestKeySystemResult EMEMediaKeySystemConfiguration
+
 // LoadResourceResult is the returned result by LoadResource() in the AppflingerListener interface
 type LoadResourceResult struct {
 	Code         string
@@ -169,34 +228,37 @@ type LoadResourceResult struct {
 	Payload      []byte
 }
 
-// GetBufferedResult is the returned result by GetBuffered() in the AppflingerListener interface
-type GetBufferedResult struct {
+// TimeIntervalArrays is the returned result by GetBuffered() and GetSeekable() in the AppflingerListener interface
+type TimeIntervalArrays struct {
 	Start []float64
 	End   []float64
 }
 
+type GetBufferedResult TimeIntervalArrays
+type GetSeekableResult TimeIntervalArrays
+
 // Added this set of methods since gomobile cannot generate bindings to arrays
 
-func (result *GetBufferedResult) GetLength() int {
+func (result *TimeIntervalArrays) GetLength() int {
 	if len(result.Start) != len(result.End) {
 		log.Println("Internal error, array length mismatch")
 	}
 	return len(result.Start)
 }
-func (result *GetBufferedResult) SetLength(length int) {
+func (result *TimeIntervalArrays) SetLength(length int) {
 	result.Start = make([]float64, length)
 	result.End = make([]float64, length)
 }
-func (result *GetBufferedResult) GetStart(index int) float64 {
+func (result *TimeIntervalArrays) GetStart(index int) float64 {
 	return result.Start[index]
 }
-func (result *GetBufferedResult) SetStart(index int, value float64) {
+func (result *TimeIntervalArrays) SetStart(index int, value float64) {
 	result.Start[index] = value
 }
-func (result *GetBufferedResult) GetEnd(index int) float64 {
+func (result *TimeIntervalArrays) GetEnd(index int) float64 {
 	return result.End[index]
 }
-func (result *GetBufferedResult) SetEnd(index int, value float64) {
+func (result *TimeIntervalArrays) SetEnd(index int, value float64) {
 	result.End[index] = value
 }
 
@@ -204,39 +266,95 @@ func (result *GetBufferedResult) SetEnd(index int, value float64) {
 // An example is available under examples/stub.go. The "AppFlinger API and Client Integration Guide"
 // describes the control channel operation and its various commands in detail.
 type AppflingerListener interface {
-	Load(instanceId string, url string) (err error)
-	CancelLoad(instanceId string) (err error)
-	Pause(instanceId string) (err error)
-	Play(instanceId string) (err error)
-	Seek(instanceId string, time float64) (err error)
-	GetPaused(instanceId string) (paused bool, err error)
-	GetSeeking(instanceId string) (seeking bool, err error)
-	GetDuration(instanceId string) (duration float64, err error)
-	GetCurrentTime(instanceId string) (time float64, err error)
-	GetNetworkState(instanceId string) (networkState int, err error)
-	GetReadyState(instanceId string) (readyState int, err error)
-	GetMaxTimeSeekable(instanceId string) (maxTimeSeekable float64, err error)
-	GetBuffered(instanceId string, result *GetBufferedResult) (err error)
-	SetRect(instanceId string, x int, y int, width int, height int) (err error)
-	SetVisible(instanceId string, visible bool) (err error)
-	AddSourceBuffer(instanceId string, sourceId string, mimeType string) (err error)
-	RemoveSourceBuffer(instanceId string, sourceId string) (err error)
-	ResetSourceBuffer(instanceId string, sourceId string) (err error)
-	AppendBuffer(instanceId string, sourceId string, appendWindowStart float64, appendWindowEnd float64, bufferId string, bufferOffset int,
+
+	// Control Channel functions - media related
+
+	Load(sessionId string, instanceId string, url string) (err error)
+	CancelLoad(sessionId string, instanceId string) (err error)
+	Pause(sessionId string, instanceId string) (err error)
+	Play(sessionId string, instanceId string) (err error)
+	Seek(sessionId string, instanceId string, time float64) (err error)
+	GetPaused(sessionId string, instanceId string) (paused bool, err error)
+	GetSeeking(sessionId string, instanceId string) (seeking bool, err error)
+	GetDuration(sessionId string, instanceId string) (duration float64, err error)
+	GetCurrentTime(sessionId string, instanceId string) (time float64, err error)
+	GetNetworkState(sessionId string, instanceId string) (networkState int, err error)
+	GetReadyState(sessionId string, instanceId string) (readyState int, err error)
+	GetSeekable(sessionId string, instanceId string, result *GetSeekableResult) (err error)
+	GetBuffered(sessionId string, instanceId string, result *GetBufferedResult) (err error)
+	SetRect(sessionId string, instanceId string, x int, y int, width int, height int) (err error)
+	SetVisible(sessionId string, instanceId string, visible bool) (err error)
+
+	// Control Channel functions - MSE related
+
+	AddSourceBuffer(sessionId string, instanceId string, sourceId string, mimeType string) (err error)
+	RemoveSourceBuffer(sessionId string, instanceId string, sourceId string) (err error)
+	AbortSourceBuffer(sessionId string, instanceId string, sourceId string) (err error)
+	AppendBuffer(sessionId string, instanceId string, sourceId string, appendWindowStart float64, appendWindowEnd float64, bufferId string, bufferOffset int,
 		bufferLength int, payload []byte, result *GetBufferedResult) (err error)
-	LoadResource(url string, method string, headers string, resourceId string, byteRangeStart int, byteRangeEnd int,
+
+	SetAppendMode(sessionId string, instanceId string, sourceId string, mode int) (err error)
+	SetAppendTimestampOffset(sessionId string, instanceId string, sourceId string, timestampOffset float64) (err error)
+	RemoveBufferRange(sessionId string, instanceId string, sourceId string, start float64, end float64) (err error)
+	ChangeSourceBufferType(sessionId string, instanceId string, sourceId string, mimeType string) (err error)
+
+	// Control Channel functions - client side XHR
+
+	// TODO what about cancelLoadResource()? We need to make LoadResource cancellable
+	LoadResource(sessionId string, url string, method string, headers string, resourceId string, byteRangeStart int, byteRangeEnd int,
 		sequenceNumber int, payload []byte, result *LoadResourceResult) (err error)
-	SendMessage(message string) (result string, err error)
-	OnPageLoad() (err error)
-	OnAddressBarChanged(url string) (err error)
-	OnTitleChanged(title string) (err error)
-	OnPageClose() (err error)
-	OnUIFrame(isCodecConfig bool, isKeyFrame bool, idx int, pts int, dts int, data []byte) (err error)
+	DeleteResource(sessionId string, BufferId string) (err error)
+
+	// Control Channel functions - EME related
+	// Note that eventInstanceId is for sending events which are associated with a given CDM session. It is serves
+	// the same purpose as cdmSessionId but is needed before cdmSessionId exists.
+	// TODO maybe get rid of cdmSessionId and just rename eventInstanceId to cdmSessionId
+	// The instanceId used above and in SetCdm() is different, it is the instance of the media player (more than one may exist)
+	RequestKeySystem(sessionId string, keySystem string, supportedConfigurations []EMEMediaKeySystemConfiguration, result *RequestKeySystemResult) (err error)
+	CdmCreate(sessionId string, keySystem string, securityOrigin string, allowDistinctiveIdentifier bool, allowPersistentState bool) (cdmId string, err error)
+	CdmSetServerCertificate(sessionId string, cdmId string, payload []byte) (err error)
+	CdmSessionCreate(sessionId string, eventInstanceId string, cdmId string, sessionType string, initDataType string, payload []byte) (cdmSessionId string, expiration float64, err error)
+	CdmSessionUpdate(sessionId string, eventInstanceId string, cdmId string, cdmSessionId string, payload []byte) (err error)
+	CdmSessionLoad(sessionId string, eventInstanceId string, cdmId string, cdmSessionId string) (loaded bool, expiration float64, err error)
+	CdmSessionRemove(sessionId string, eventInstanceId string, cdmId string, cdmSessionId string) (err error)
+	CdmSessionClose(sessionId string, eventInstanceId string, cdmId string, cdmSessionId string) (err error)
+	SetCdm(sessionId string, instanceId string, cdmId string) (err error)
+
+	// Control Channel functions - General
+
+	SendMessage(sessionId string, message string) (result string, err error)
+	OnPageLoad(sessionId string) (err error)
+	OnAddressBarChanged(sessionId string, url string) (err error)
+	OnTitleChanged(sessionId string, title string) (err error)
+	OnPageClose(sessionId string) (err error)
+
+	// Misc Go SDK functions
+
+	OnUIFrame(sessionId string, isCodecConfig bool, isKeyFrame bool, idx int, pts int, dts int, data []byte) (err error)
 }
 
 var (
-	ErrInterrupted = errors.New("Aborting due to interrupt")
+	ErrInterrupted  = errors.New("Aborting due to interrupt")
+	globalRequestId = 0
+	sessionIdToCtx  = make(map[string]*SessionContext)
 )
+
+func getRequestId() string {
+	globalRequestId++
+	return strconv.Itoa(globalRequestId)
+}
+
+func boolToStr(val bool) string {
+	if val {
+		return "1"
+	} else {
+		return "0"
+	}
+}
+
+func strToBool(val string) bool {
+	return val == "true" || val == "yes" || val == "1"
+}
 
 func replaceVars(str string, vars []string, vals []string) (result string) {
 	result = str
@@ -246,11 +364,36 @@ func replaceVars(str string, vars []string, vals []string) (result string) {
 	return
 }
 
+func marshalRPCNotification(sessionId string, requestId string, instanceId string, payload []byte) (notif []byte, err error) {
+	jsonMap := make(map[string]interface{})
+	jsonMap["service"] = "eventNotification"
+	jsonMap["sessionId"] = sessionId
+	jsonMap["requestId"] = requestId
+	jsonMap["instanceId"] = instanceId
+
+	if payload != nil {
+		jsonMap["payloadSize"] = strconv.Itoa(len(payload))
+	}
+
+	notif, err = json.Marshal(jsonMap)
+	if err != nil {
+		err = fmt.Errorf("Error in JSON marshaling of %v, reason: %w", jsonMap, err)
+	} else if payload != nil {
+		// RPC message format requires messages to be terminated with "\n\n"
+		notif = append(notif, []byte("\n\n")...)
+		notif = append(notif, payload...)
+	}
+	return
+}
+
 func marshalRPCResponse(result map[string]interface{}, resultPayload []byte, respErr error) (resp []byte, err error) {
 	if respErr == nil {
 		result["result"] = "OK"
 		if result["message"] == nil {
 			result["message"] = ""
+		}
+		if resultPayload != nil {
+			result["payloadSize"] = len(resultPayload)
 		}
 	} else {
 		result["result"] = "ERROR"
@@ -272,25 +415,26 @@ func processRPCRequest(req *controlChannelRequest, payload []byte, appf Appfling
 	result["requestId"] = req.RequestId
 	var resultPayload []byte = nil
 
+	log.Println("============>", req.Service)
 	if req.Service == "load" {
 		//log.Println(fmt.Sprintf("service: %s -- %s", req.Service, req.URL))
 		if appf != nil {
-			err = appf.Load(req.InstanceId, req.URL)
+			err = appf.Load(req.SessionId, req.InstanceId, req.URL)
 		}
 	} else if req.Service == "cancelLoad" {
 		//log.Println("service: " + req.Service)
 		if appf != nil {
-			err = appf.CancelLoad(req.InstanceId)
+			err = appf.CancelLoad(req.SessionId, req.InstanceId)
 		}
 	} else if req.Service == "play" {
 		//log.Println("service: " + req.Service)
 		if appf != nil {
-			err = appf.Play(req.InstanceId)
+			err = appf.Play(req.SessionId, req.InstanceId)
 		}
 	} else if req.Service == "pause" {
 		//log.Println("service: " + req.Service)
 		if appf != nil {
-			err = appf.Pause(req.InstanceId)
+			err = appf.Pause(req.SessionId, req.InstanceId)
 		}
 	} else if req.Service == "seek" {
 		//log.Println(fmt.Sprintf("service: %s -- %f", req.Service, req.Time))
@@ -303,39 +447,31 @@ func processRPCRequest(req *controlChannelRequest, payload []byte, appf Appfling
 			return
 		}
 		if appf != nil {
-			err = appf.Seek(req.InstanceId, time)
+			err = appf.Seek(req.SessionId, req.InstanceId, time)
 		}
 	} else if req.Service == "getPaused" {
 		//log.Println("service: " + req.Service)
 		paused := false
 		if appf != nil {
-			paused, err = appf.GetPaused(req.InstanceId)
+			paused, err = appf.GetPaused(req.SessionId, req.InstanceId)
 		}
 		if err == nil {
-			if paused {
-				result["paused"] = "1"
-			} else {
-				result["paused"] = "0"
-			}
+			result["paused"] = boolToStr(paused)
 		}
 	} else if req.Service == "getSeeking" {
 		//log.Println("service: " + req.Service)
 		seeking := false
 		if appf != nil {
-			seeking, err = appf.GetSeeking(req.InstanceId)
+			seeking, err = appf.GetSeeking(req.SessionId, req.InstanceId)
 		}
 		if err == nil {
-			if seeking {
-				result["seeking"] = "1"
-			} else {
-				result["seeking"] = "0"
-			}
+			result["seeking"] = boolToStr(seeking)
 		}
 	} else if req.Service == "getDuration" {
 		//log.Println("service: " + req.Service)
 		duration := float64(0)
 		if appf != nil {
-			duration, err = appf.GetDuration(req.InstanceId)
+			duration, err = appf.GetDuration(req.SessionId, req.InstanceId)
 		}
 		if err == nil {
 			result["duration"] = strconv.FormatFloat(duration, 'f', -1, 64)
@@ -344,25 +480,26 @@ func processRPCRequest(req *controlChannelRequest, payload []byte, appf Appfling
 		//log.Println("service: " + req.Service)
 		time := float64(0)
 		if appf != nil {
-			time, err = appf.GetCurrentTime(req.InstanceId)
+			time, err = appf.GetCurrentTime(req.SessionId, req.InstanceId)
 		}
 		if err == nil {
 			result["currentTime"] = strconv.FormatFloat(time, 'f', -1, 64)
 		}
-	} else if req.Service == "getMaxTimeSeekable" {
+	} else if req.Service == "getSeekable" {
 		//log.Println("service: " + req.Service)
-		time := float64(0)
+		var getSeekableResult GetSeekableResult
 		if appf != nil {
-			time, err = appf.GetMaxTimeSeekable(req.InstanceId)
+			err = appf.GetSeekable(req.SessionId, req.InstanceId, &getSeekableResult)
 		}
 		if err == nil {
-			result["maxTimeSeekable"] = strconv.FormatFloat(time, 'f', -1, 64)
+			result["start"] = getSeekableResult.Start
+			result["end"] = getSeekableResult.End
 		}
 	} else if req.Service == "getNetworkState" {
 		//log.Println("service: " + req.Service)
 		state := NETWORK_STATE_LOADED
 		if appf != nil {
-			state, err = appf.GetNetworkState(req.InstanceId)
+			state, err = appf.GetNetworkState(req.SessionId, req.InstanceId)
 		}
 		if err == nil {
 			result["networkState"] = strconv.Itoa(state)
@@ -371,7 +508,7 @@ func processRPCRequest(req *controlChannelRequest, payload []byte, appf Appfling
 		//log.Println("service: " + req.Service)
 		state := READY_STATE_HAVE_ENOUGH_DATA
 		if appf != nil {
-			state, err = appf.GetReadyState(req.InstanceId)
+			state, err = appf.GetReadyState(req.SessionId, req.InstanceId)
 		}
 		if err == nil {
 			result["readyState"] = strconv.Itoa(state)
@@ -382,7 +519,7 @@ func processRPCRequest(req *controlChannelRequest, payload []byte, appf Appfling
 			// Time range of buffered portions, there can be gaps that are unbuffered hence
 			// we are dealing with two arrays and not two scalars.
 			var getBufferedResult GetBufferedResult
-			err = appf.GetBuffered(req.InstanceId, &getBufferedResult)
+			err = appf.GetBuffered(req.SessionId, req.InstanceId, &getBufferedResult)
 			if err == nil {
 				if getBufferedResult.Start != nil && getBufferedResult.End != nil {
 					result["start"] = getBufferedResult.Start
@@ -423,27 +560,83 @@ func processRPCRequest(req *controlChannelRequest, payload []byte, appf Appfling
 		}
 
 		if appf != nil {
-			err = appf.SetRect(req.InstanceId, int(x), int(y), int(width), int(height))
+			err = appf.SetRect(req.SessionId, req.InstanceId, int(x), int(y), int(width), int(height))
 		}
 	} else if req.Service == "setVisible" {
 		//log.Println(fmt.Sprintf("service: %s -- %s", req.Service, req.Visible))
 		if appf != nil {
-			err = appf.SetVisible(req.InstanceId, req.Visible == "true" || req.Visible == "yes" || req.Visible == "1")
+			err = appf.SetVisible(req.SessionId, req.InstanceId, strToBool(req.Visible))
 		}
 	} else if req.Service == "addSourceBuffer" {
 		//log.Println(fmt.Sprintf("service: %s -- %s, %s", req.Service, req.SourceId, req.Type))
 		if appf != nil {
-			err = appf.AddSourceBuffer(req.InstanceId, req.SourceId, req.Type)
+			err = appf.AddSourceBuffer(req.SessionId, req.InstanceId, req.SourceId, req.Type)
 		}
 	} else if req.Service == "removeSourceBuffer" {
 		//log.Println(fmt.Sprintf("service: %s -- %s", req.Service, req.SourceId))
 		if appf != nil {
-			err = appf.RemoveSourceBuffer(req.InstanceId, req.SourceId)
+			err = appf.RemoveSourceBuffer(req.SessionId, req.InstanceId, req.SourceId)
 		}
-	} else if req.Service == "resetSourceBuffer" {
+	} else if req.Service == "abortSourceBuffer" {
 		//log.Println(fmt.Sprintf("service: %s -- %s", req.Service, req.SourceId))
 		if appf != nil {
-			err = appf.ResetSourceBuffer(req.InstanceId, req.SourceId)
+			err = appf.AbortSourceBuffer(req.SessionId, req.InstanceId, req.SourceId)
+		}
+	} else if req.Service == "setAppendMode" {
+		//log.Println(fmt.Sprintf("service: %s -- %s, %s", req.Service, req.SourceId, req.Mode))
+		var mode uint64
+		mode, err = strconv.ParseUint(req.Mode, 10, 0)
+		if err != nil {
+			err = errors.New("Failed to parse integer: " + req.Mode)
+			log.Println(err)
+			resp, err = marshalRPCResponse(result, resultPayload, err)
+			return
+		}
+
+		if appf != nil {
+			err = appf.SetAppendMode(req.SessionId, req.InstanceId, req.SourceId, int(mode))
+		}
+	} else if req.Service == "setAppendTimestampOffset" {
+		//log.Println(fmt.Sprintf("service: %s -- %s, %s", req.Service, req.SourceId, req.TimestampOffset))
+
+		var timestampOffset float64
+		timestampOffset, err = strconv.ParseFloat(req.TimestampOffset, 64)
+		if err != nil {
+			err = errors.New("Failed to parse float: " + req.TimestampOffset)
+			log.Println(err)
+			resp, err = marshalRPCResponse(result, resultPayload, err)
+			return
+		}
+
+		if appf != nil {
+			err = appf.SetAppendTimestampOffset(req.SessionId, req.InstanceId, req.SourceId, timestampOffset)
+		}
+	} else if req.Service == "removeBufferRange" {
+		//log.Println(fmt.Sprintf("service: %s -- %s, %s", req.Service, req.SourceId, req.TimestampOffset))
+
+		var start, end float64
+		start, err = strconv.ParseFloat(req.Start, 64)
+		if err != nil {
+			err = errors.New("Failed to parse float: " + req.Start)
+			log.Println(err)
+			resp, err = marshalRPCResponse(result, resultPayload, err)
+			return
+		}
+		end, err = strconv.ParseFloat(req.End, 64)
+		if err != nil {
+			err = errors.New("Failed to parse float: " + req.End)
+			log.Println(err)
+			resp, err = marshalRPCResponse(result, resultPayload, err)
+			return
+		}
+
+		if appf != nil {
+			err = appf.RemoveBufferRange(req.SessionId, req.InstanceId, req.SourceId, start, end)
+		}
+	} else if req.Service == "changeSourceBufferType" {
+		//log.Println(fmt.Sprintf("service: %s -- %s", req.Service, req.SourceId))
+		if appf != nil {
+			err = appf.ChangeSourceBufferType(req.SessionId, req.InstanceId, req.SourceId, req.MimeType)
 		}
 	} else if req.Service == "appendBuffer" {
 		/*log.Println(fmt.Sprintf("service: %s -- %s, %s, %s, %s, %s, %s, %s", req.Service, req.SourceId,
@@ -493,7 +686,7 @@ func processRPCRequest(req *controlChannelRequest, payload []byte, appf Appfling
 
 		if appf != nil {
 			var getBufferedResult GetBufferedResult
-			err = appf.AppendBuffer(req.InstanceId, req.SourceId, appendWindowStart, appendWindowEnd, req.BufferId,
+			err = appf.AppendBuffer(req.SessionId, req.InstanceId, req.SourceId, appendWindowStart, appendWindowEnd, req.BufferId,
 				int(bufferOffset), int(bufferLength), payload, &getBufferedResult)
 			if err == nil {
 				if getBufferedResult.Start != nil && getBufferedResult.End != nil {
@@ -543,7 +736,7 @@ func processRPCRequest(req *controlChannelRequest, payload []byte, appf Appfling
 		}
 		if appf != nil {
 			var loadResourceResult LoadResourceResult
-			err = appf.LoadResource(req.Url, req.Method, req.Headers, req.ResourceId,
+			err = appf.LoadResource(req.SessionId, req.Url, req.Method, req.Headers, req.ResourceId,
 				int(byteRange[0]), int(byteRange[1]), int(sequenceNumber), payload, &loadResourceResult)
 			if err == nil {
 				result["code"] = loadResourceResult.Code
@@ -552,13 +745,14 @@ func processRPCRequest(req *controlChannelRequest, payload []byte, appf Appfling
 					result["bufferId"] = loadResourceResult.BufferId
 					result["bufferLength"] = strconv.Itoa(loadResourceResult.BufferLength)
 				}
+				resultPayload = loadResourceResult.Payload
 			}
 		}
 	} else if req.Service == "sendMessage" {
 		//log.Println(fmt.Sprintf("service: %s -- %s", req.Service, req.Message))
 		message := ""
 		if appf != nil {
-			message, err = appf.SendMessage(req.Message)
+			message, err = appf.SendMessage(req.SessionId, req.Message)
 		}
 		if err == nil {
 			result["message"] = message
@@ -566,22 +760,22 @@ func processRPCRequest(req *controlChannelRequest, payload []byte, appf Appfling
 	} else if req.Service == "onPageLoad" {
 		//log.Println("service: ", req.Service)
 		if appf != nil {
-			err = appf.OnPageLoad()
+			err = appf.OnPageLoad(req.SessionId)
 		}
 	} else if req.Service == "onAddressBarChanged" {
 		//log.Println(fmt.Sprintf("service: %s -- %s", req.Service, req.URL))
 		if appf != nil {
-			err = appf.OnAddressBarChanged(req.URL)
+			err = appf.OnAddressBarChanged(req.SessionId, req.URL)
 		}
 	} else if req.Service == "onTitleChanged" {
 		//log.Println(fmt.Sprintf("service: %s -- %s", req.Service, req.Title))
 		if appf != nil {
-			err = appf.OnTitleChanged(req.Title)
+			err = appf.OnTitleChanged(req.SessionId, req.Title)
 		}
 	} else if req.Service == "onPageClose" {
 		//log.Println("service: ", req.Service)
 		if appf != nil {
-			err = appf.OnPageClose()
+			err = appf.OnPageClose(req.SessionId)
 		}
 	} else {
 		err = errors.New("Unknown service: " + req.Service)
@@ -724,6 +918,14 @@ func controlChannelRun(ctx *SessionContext, appf AppflingerListener) (err error)
 			ctx.isDone <- true
 			return
 		}
+
+		// Empty messages are sent periodically to keep the connection open
+		if jsonEndPos == 0 {
+			httpRes.Body.Close()
+			postMessage = nil
+			continue
+		}
+
 		jsonEndPos += 2
 
 		// Parse the response
@@ -747,23 +949,14 @@ func controlChannelRun(ctx *SessionContext, appf AppflingerListener) (err error)
 			continue
 		}
 
-		// Empty messages are sent periodically to keep the connection open
-		if req.Service == "" {
-			httpRes.Body.Close()
-			postMessage = nil
-			continue
-		}
-
 		payload := body[jsonEndPos:]
 		if req.PayloadSize != "" || len(payload) > 0 {
 			var payloadSize uint64
 			payloadSize, err = strconv.ParseUint(req.PayloadSize, 10, 0)
 			if err != nil {
 				err = errors.New("Failed to parse payload size integer: " + req.PayloadSize)
-			}
-			if uint64(len(payload)) != payloadSize {
+			} else if uint64(len(payload)) != payloadSize {
 				err = fmt.Errorf("Payload size mismatch, %d != %d", len(payload), payloadSize)
-				log.Println(err)
 			}
 			if err != nil {
 				log.Println(err)
@@ -789,7 +982,7 @@ func printCookies(cookieJar *cookiejar.Jar, uri string) {
 	}
 }
 
-func httpGet(cookieJar *cookiejar.Jar, uri string, shouldStop chan bool) (io.ReadCloser, error) {
+func httpReq(cookieJar *cookiejar.Jar, uri string, method string, body io.Reader, shouldStop chan bool) (io.ReadCloser, error) {
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
@@ -805,7 +998,7 @@ func httpGet(cookieJar *cookiejar.Jar, uri string, shouldStop chan bool) (io.Rea
 	var err error
 	var httpReq *http.Request
 	var httpRes *http.Response
-	httpReq, err = http.NewRequest("GET", uri, nil)
+	httpReq, err = http.NewRequest(method, uri, body)
 	if err != nil {
 		return nil, err
 	}
@@ -847,8 +1040,27 @@ func httpGet(cookieJar *cookiejar.Jar, uri string, shouldStop chan bool) (io.Rea
 	return httpRes.Body, nil
 }
 
-func apiReq(cookieJar *cookiejar.Jar, uri string, shouldStop chan bool, resp interface{}) (err error) {
-	reader, e := httpGet(cookieJar, uri, shouldStop)
+func httpGet(cookieJar *cookiejar.Jar, uri string, shouldStop chan bool) (io.ReadCloser, error) {
+	return httpReq(cookieJar, uri, http.MethodGet, nil, shouldStop)
+}
+
+func httpPost(cookieJar *cookiejar.Jar, uri string, body []byte, shouldStop chan bool) (io.ReadCloser, error) {
+	if body == nil {
+		return httpReq(cookieJar, uri, http.MethodPost, nil, shouldStop)
+	} else {
+		return httpReq(cookieJar, uri, http.MethodPost, bytes.NewReader(body), shouldStop)
+	}
+
+}
+
+func apiReq(cookieJar *cookiejar.Jar, uri string, body []byte, shouldStop chan bool, resp interface{}) (err error) {
+	var reader io.ReadCloser
+	var e error
+	if body == nil {
+		reader, e = httpReq(cookieJar, uri, http.MethodGet, nil, shouldStop)
+	} else {
+		reader, e = httpReq(cookieJar, uri, http.MethodPost, bytes.NewReader(body), shouldStop)
+	}
 	if e != nil {
 		return e
 	}
@@ -878,12 +1090,17 @@ func apiReq(cookieJar *cookiejar.Jar, uri string, shouldStop chan bool, resp int
 func controlChannelRoutine(ctx *SessionContext, appf AppflingerListener) {
 	err := controlChannelRun(ctx, appf)
 	if err != nil && err != ErrInterrupted {
-		log.Println("Failed to connect to control channel with error: ", err)
+		// We do not print the err since it can lead to a crash in
+		// net.(*OpError).Error(0xc000054c40, 0x717a68, 0xc000180000)
+		// this is in file/line go/src/net/net.go:460
+		// the crash code is: s += " " + e.Source.String()
+		// Although it is encloses in: if e.Source != nil
+		log.Println("Control channel connection ended with error")
 	}
 }
 
 // SessionStart is used to start a new session or navigate an existing one to a new address.
-// The arguments to this function are as per the descirption of the /osb/session/start API in
+// The arguments to this function are as per the description of the /osb/session/start API in
 // the "AppFlinger API and Client Integration Guide".
 func SessionStart(serverProtocolHost string, sessionId string, browserURL string, pullMode bool, isVideoPassthru bool, browserUIOutputURL string,
 	videoStreamURL string, appf AppflingerListener) (ctx *SessionContext, err error) {
@@ -934,7 +1151,7 @@ func SessionStart(serverProtocolHost string, sessionId string, browserURL string
 	// Make the request
 	// We get here a struct with the data returned from the server (namely the session id)
 	resp := &sessionStartResp{}
-	err = apiReq(cookieJar, uri, nil, resp)
+	err = apiReq(cookieJar, uri, nil, nil, resp)
 	if err != nil {
 		log.Println("Failed to start session: ", err)
 		resp = nil
@@ -949,6 +1166,7 @@ func SessionStart(serverProtocolHost string, sessionId string, browserURL string
 	ctx.shouldStopSession = make(chan bool, 1)
 	ctx.shouldStopUI = make(chan bool, 1)
 	ctx.isDone = make(chan bool, 1)
+	sessionIdToCtx[ctx.SessionId] = ctx
 	go controlChannelRoutine(ctx, appf)
 	return
 }
@@ -977,11 +1195,23 @@ func SessionStop(ctx *SessionContext) (err error) {
 	})
 
 	// Make the request
-	err = apiReq(ctx.CookieJar, uri, nil, nil)
+	err = apiReq(ctx.CookieJar, uri, nil, nil, nil)
 	if err != nil {
 		log.Println("Failed to stop session: ", err)
 		return
 	}
+	return
+}
+
+func SessionGetSessionId(ctx *SessionContext) (sessionId string, err error) {
+	sessionId = ctx.SessionId
+	err = nil
+	return
+}
+
+func SessionGetSessionContext(sessionId string) (ctx *SessionContext, err error) {
+	ctx = sessionIdToCtx[sessionId]
+	err = nil
 	return
 }
 
@@ -990,7 +1220,7 @@ func SessionSendEvent(ctx *SessionContext, eventType string, code int, x int, y 
 	// Construct the URL
 	uri := _SESSION_EVENT_URL
 	eventType = strings.ToLower(eventType)
-	if eventType == "key" {
+	if eventType == "key" || eventType == "keydown" || eventType == "keyup" {
 		uri += "&code=${KEYCODE}"
 	} else if eventType == "click" {
 		uri += "&x=${X}&y=${Y}"
@@ -1016,7 +1246,7 @@ func SessionSendEvent(ctx *SessionContext, eventType string, code int, x int, y 
 	})
 
 	// Make the request
-	err = apiReq(ctx.CookieJar, uri, ctx.shouldStopSession, nil)
+	err = apiReq(ctx.CookieJar, uri, nil, ctx.shouldStopSession, nil)
 	return
 }
 
@@ -1136,7 +1366,7 @@ func uiStream(ctx *SessionContext, uri string) (err error) {
 			var data []byte
 			pkt := &pkts[readIndex]
 			data = pktToBitstream(videoCodecData, pkt)
-			err = ctx.appflingerListener.OnUIFrame(pkt.IsKeyFrame, pkt.IsKeyFrame, int(pkt.Idx), int(pkt.CompositionTime), int(pkt.Time), data)
+			err = ctx.appflingerListener.OnUIFrame(ctx.SessionId, pkt.IsKeyFrame, pkt.IsKeyFrame, int(pkt.Idx), int(pkt.CompositionTime), int(pkt.Time), data)
 			if err != nil {
 				err = fmt.Errorf("UI frame listener failed: %v", err)
 				return
@@ -1197,5 +1427,72 @@ func SessionUIStreamStop(ctx *SessionContext) (err error) {
 	}
 	ctx.shouldStopUI <- true
 	<-ctx.isDone
+	return nil
+}
+
+func SessionSendNotification(ctx *SessionContext, instanceId string, payload []byte) (err error) {
+	// Construct the URL
+	uri := _SESSION_CONTROL_RESPONSE_URL
+	uri = replaceVars(uri, []string{
+		"${PROTHOST}",
+		"${SID}",
+	}, []string{
+		ctx.ServerProtocolHost,
+		url.QueryEscape(ctx.SessionId),
+	})
+
+	// Make the request
+	err = apiReq(ctx.CookieJar, uri, payload, ctx.shouldStopSession, nil)
+	return
+}
+
+func NotificationCreateVideoStateChange(readyState int, networkState int, paused bool, seeking bool,
+	duration float64, time float64, videoWidth int, videoHeight int) ([]byte, error) {
+	notif := VideoStateChangeNotifcation{
+		Type:         "videostatechange",
+		ReadyState:   readyState,
+		NetworkState: networkState,
+		Paused:       boolToStr(paused),
+		Seeking:      boolToStr(seeking),
+		Duration:     duration,
+		Time:         time,
+		VideoWidth:   videoWidth,
+		VideoHeight:  videoHeight,
+	}
+	json, err := json.Marshal(notif)
+	if err != nil {
+		return nil, fmt.Errorf("Error in JSON marshaling of %v, reason: %w", notif, err)
+	}
+
+	return json, nil
+}
+
+func SessionSendNotificationVideoStateChange(ctx *SessionContext, instanceId string, readyState int,
+	networkState int, paused bool, seeking bool, duration float64, time float64, videoWidth int, videoHeight int) (err error) {
+	notif, err := NotificationCreateVideoStateChange(readyState, networkState, paused, seeking, duration, time,
+		videoWidth, videoHeight)
+	if notif == nil || err != nil {
+		err = fmt.Errorf("Failed to create the notification: %w", err)
+		return
+	}
+
+	notif, err = marshalRPCNotification(ctx.SessionId, getRequestId(), instanceId, notif)
+	if err != nil {
+		err = fmt.Errorf("Failed to marshal the notification RPC json, error: %w", err)
+		return
+	}
+	err = SessionSendNotification(ctx, instanceId, notif)
+	return
+}
+
+func NotificationCreateEncrypted(initDataType string, payload []byte) []byte {
+	return nil
+}
+
+func NotificationCreateCdmSessionMessage(messageType string, payload []byte) []byte {
+	return nil
+}
+
+func NotificationCreateCdmSessionKeyStatusesChange(payload []byte) []byte {
 	return nil
 }
