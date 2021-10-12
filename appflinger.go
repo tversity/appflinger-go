@@ -182,11 +182,30 @@ type controlChannelRequest struct {
 	ByteRange      string
 	SequenceNumber string
 
-	// Used in setRect
+	// Used in setRect()
 	X      string
 	Y      string
 	Width  string
 	Height string
+
+	// Used in requestKeySystem()
+	KeySystem               string
+	SupportedConfigurations []EMEMediaKeySystemConfiguration
+
+	// Used in cdmCreate()
+	SecurityOrigin             string
+	AllowDistinctiveIdentifier string
+	AllowPersistentState       string
+
+	// Used in cdmSetServerCertificate()
+	CdmId string
+
+	// Used in cdmSessionCreate()
+	SessionType  string
+	InitDataType string
+
+	// Used in cdmSessionUpdate()
+	CdmSessionId string
 }
 
 type VideoStateChangeNotifcation struct {
@@ -203,19 +222,19 @@ type VideoStateChangeNotifcation struct {
 
 // MediaKeySystemMediaCapability as per EME spec
 type EMEMediaKeySystemMediaCapability struct {
-	ContentType string
-	Robustness  string
+	ContentType string `json:"contentType"`
+	Robustness  string `json:"robustness"`
 }
 
 // MediaKeySystemConfiguration as per EME spec
 type EMEMediaKeySystemConfiguration struct {
-	Label                 string
-	InitDataTypes         []string
-	AudioCapabilities     []EMEMediaKeySystemMediaCapability
-	VideoCapabilities     []EMEMediaKeySystemMediaCapability
-	DistinctiveIdentifier string   // One of EME_MEDIA_KEYS_REQUIRED, EME_MEDIA_KEYS_OPTIONAL, EME_MEDIA_KEYS_NOT_ALLOWED
-	PersistentState       string   // One of EME_MEDIA_KEYS_REQUIRED, EME_MEDIA_KEYS_OPTIONAL, EME_MEDIA_KEYS_NOT_ALLOWED
-	SessionTypes          []string // Array values are one of EME_MEDIA_KEYS_SESSION_TEMPORARY, EME_MEDIA_KEYS_SESSION_PERSISTENT_LICENSE
+	Label                 string                             `json:"label"`
+	InitDataTypes         []string                           `json:"initDataTypes"`
+	AudioCapabilities     []EMEMediaKeySystemMediaCapability `json:"audioCapabilities"`
+	VideoCapabilities     []EMEMediaKeySystemMediaCapability `json:"videoCapabilities"`
+	DistinctiveIdentifier string                             `json:"distinctiveIdentifier"` // One of EME_MEDIA_KEYS_REQUIRED, EME_MEDIA_KEYS_OPTIONAL, EME_MEDIA_KEYS_NOT_ALLOWED
+	PersistentState       string                             `json:"persistentState"`       // One of EME_MEDIA_KEYS_REQUIRED, EME_MEDIA_KEYS_OPTIONAL, EME_MEDIA_KEYS_NOT_ALLOWED
+	SessionTypes          []string                           `json:"sessionTypes"`          // Array values are one of EME_MEDIA_KEYS_SESSION_TEMPORARY, EME_MEDIA_KEYS_SESSION_PERSISTENT_LICENSE
 }
 
 // RequestKeySystemResult is the returned result by RequestKeySystem()
@@ -296,7 +315,6 @@ type AppflingerListener interface {
 	AbortSourceBuffer(sessionId string, instanceId string, sourceId string) (err error)
 	AppendBuffer(sessionId string, instanceId string, sourceId string, appendWindowStart float64, appendWindowEnd float64, bufferId string, bufferOffset int,
 		bufferLength int, payload []byte, result *GetBufferedResult) (err error)
-
 	SetAppendMode(sessionId string, instanceId string, sourceId string, mode int) (err error)
 	SetAppendTimestampOffset(sessionId string, instanceId string, sourceId string, timestampOffset float64) (err error)
 	RemoveBufferRange(sessionId string, instanceId string, sourceId string, start float64, end float64) (err error)
@@ -518,16 +536,16 @@ func processRPCRequest(req *controlChannelRequest, payload []byte, appf Appfling
 		}
 	} else if req.Service == "getBuffered" {
 		//log.Println("service: " + req.Service)
+		// Time range of buffered portions, there can be gaps that are unbuffered hence
+		// we are dealing with two arrays and not two scalars.
+		var getBufferedResult GetBufferedResult
 		if appf != nil {
-			// Time range of buffered portions, there can be gaps that are unbuffered hence
-			// we are dealing with two arrays and not two scalars.
-			var getBufferedResult GetBufferedResult
 			err = appf.GetBuffered(req.SessionId, req.InstanceId, &getBufferedResult)
-			if err == nil {
-				if getBufferedResult.Start != nil && getBufferedResult.End != nil {
-					result["start"] = getBufferedResult.Start
-					result["end"] = getBufferedResult.End
-				}
+		}
+		if err == nil {
+			if getBufferedResult.Start != nil && getBufferedResult.End != nil {
+				result["start"] = getBufferedResult.Start
+				result["end"] = getBufferedResult.End
 			}
 		}
 	} else if req.Service == "setRect" {
@@ -665,7 +683,7 @@ func processRPCRequest(req *controlChannelRequest, payload []byte, appf Appfling
 			err = appf.RemoveBufferRange(req.SessionId, req.InstanceId, req.SourceId, start, end)
 		}
 	} else if req.Service == "changeSourceBufferType" {
-		//log.Println(fmt.Sprintf("service: %s -- %s", req.Service, req.SourceId))
+		//log.Println(fmt.Sprintf("service: %s -- %s", req.Service, req.SourceId, req.MimeType))
 		if appf != nil {
 			err = appf.ChangeSourceBufferType(req.SessionId, req.InstanceId, req.SourceId, req.MimeType)
 		}
@@ -778,6 +796,76 @@ func processRPCRequest(req *controlChannelRequest, payload []byte, appf Appfling
 				}
 				resultPayload = loadResourceResult.Payload
 			}
+		}
+	} else if req.Service == "deleteResource" {
+		//log.Println(fmt.Sprintf("service: %s -- %s", req.Service, req.BufferId))
+		if appf != nil {
+			err = appf.DeleteResource(req.SessionId, req.BufferId)
+		}
+	} else if req.Service == "requestKeySystem" {
+		//log.Println(fmt.Sprintf("service: %s -- %s", req.Service, req.KeySystem, req.supportedConfigurations))
+		var requestKeySystemResult RequestKeySystemResult
+		if appf != nil {
+			err = appf.RequestKeySystem(req.SessionId, req.KeySystem, req.SupportedConfigurations, &requestKeySystemResult)
+		}
+		if err == nil {
+			result["requestKeySystemResult"] = requestKeySystemResult
+		}
+	} else if req.Service == "cdmCreate" {
+		//log.Println(fmt.Sprintf("service: %s -- %s", req.Service, req.KeySystem, req.SecurityOrigin, req.AllowDistinctiveIdentifier, req.AllowPersistentState))
+		cdmId := ""
+		if appf != nil {
+			cdmId, err = appf.CdmCreate(req.SessionId, req.KeySystem, req.SecurityOrigin, strToBool(req.AllowDistinctiveIdentifier), strToBool(req.AllowPersistentState))
+		}
+		if err == nil {
+			result["cdmId"] = cdmId
+		}
+	} else if req.Service == "cdmSetServerCertificate" {
+		//log.Println(fmt.Sprintf("service: %s -- %s", req.Service, req.CdmId))
+		if appf != nil {
+			err = appf.CdmSetServerCertificate(req.SessionId, req.CdmId, payload)
+		}
+	} else if req.Service == "cdmSessionCreate" {
+		//log.Println(fmt.Sprintf("service: %s -- %s", req.Service, req.CdmId, req.SessionType, req.InitDataType))
+		cdmSessionId := ""
+		var expiration float64
+		if appf != nil {
+			cdmSessionId, expiration, err = appf.CdmSessionCreate(req.SessionId, req.InstanceId, req.CdmId, req.SessionType, req.InitDataType, payload)
+		}
+		if err == nil {
+			result["cdmSessionId"] = cdmSessionId
+			result["expiration"] = strconv.FormatFloat(expiration, 'f', -1, 64)
+		}
+	} else if req.Service == "cdmSessionUpdate" {
+		//log.Println(fmt.Sprintf("service: %s -- %s", req.Service, req.CdmId, req.CdmSessionId))
+		if appf != nil {
+			err = appf.CdmSessionUpdate(req.SessionId, req.InstanceId, req.CdmId, req.CdmSessionId, payload)
+		}
+	} else if req.Service == "cdmSessionLoad" {
+		//log.Println(fmt.Sprintf("service: %s -- %s", req.Service, req.CdmId, req.CdmSessionId))
+		loaded := false
+		var expiration float64
+		if appf != nil {
+			loaded, expiration, err = appf.CdmSessionLoad(req.SessionId, req.InstanceId, req.CdmId, req.CdmSessionId)
+		}
+		if err == nil {
+			result["loaded"] = boolToStr(loaded)
+			result["expiration"] = strconv.FormatFloat(expiration, 'f', -1, 64)
+		}
+	} else if req.Service == "cdmSessionRemove" {
+		//log.Println(fmt.Sprintf("service: %s -- %s", req.Service, req.CdmId, req.CdmSessionId))
+		if appf != nil {
+			err = appf.CdmSessionRemove(req.SessionId, req.InstanceId, req.CdmId, req.CdmSessionId)
+		}
+	} else if req.Service == "cdmSessionClose" {
+		//log.Println(fmt.Sprintf("service: %s -- %s", req.Service, req.CdmId, req.CdmSessionId))
+		if appf != nil {
+			err = appf.CdmSessionClose(req.SessionId, req.InstanceId, req.CdmId, req.CdmSessionId)
+		}
+	} else if req.Service == "setCdm" {
+		//log.Println(fmt.Sprintf("service: %s -- %s", req.Service, req.CdmId))
+		if appf != nil {
+			err = appf.SetCdm(req.SessionId, req.InstanceId, req.CdmId)
 		}
 	} else if req.Service == "sendMessage" {
 		//log.Println(fmt.Sprintf("service: %s -- %s", req.Service, req.Message))
