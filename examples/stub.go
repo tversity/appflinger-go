@@ -172,6 +172,24 @@ func (self *AppflingerListenerStub) SetVisible(sessionId string, instanceId stri
 	return
 }
 
+func (self *AppflingerListener) SetRate(sessionId string, instanceId string, rate float64) (err error) {
+	if self.loaded {
+		err = nil
+	} else {
+		err = errors.New("No video loaded")
+	}
+	return
+}
+
+func (self *AppflingerListener) SetVolume(sessionId string, instanceId string, volume float64) (err error) {
+	if self.loaded {
+		err = nil
+	} else {
+		err = errors.New("No video loaded")
+	}
+	return
+}
+
 func (self *AppflingerListenerStub) AddSourceBuffer(sessionId string, instanceId string, sourceId string, mimeType string) (err error) {
 	if self.loaded {
 		err = nil

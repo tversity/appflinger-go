@@ -30,11 +30,11 @@ func CBool(val bool) C.int {
 //export SessionStart
 func SessionStart(serverProtocolHost *C.char, sessionId *C.char, browserURL *C.char, pullMode C.int,
 	isVideoPassthru C.int, browserUIOutputURL *C.char, videoStreamURL *C.char, cb *C.appflinger_callbacks_t) C.int {
-	stub := NewAppflingerListener(cb)
+	listener := NewAppflingerListener(cb)
 	var ctx *appflinger.SessionContext
 	ctx, err = appflinger.SessionStart(C.GoString(serverProtocolHost), C.GoString(sessionId),
 		C.GoString(browserURL), GoBool(pullMode), GoBool(isVideoPassthru),
-		C.GoString(browserUIOutputURL), C.GoString(videoStreamURL), stub)
+		C.GoString(browserUIOutputURL), C.GoString(videoStreamURL), listener)
 	if err != nil {
 		log.Println(err)
 		return -1

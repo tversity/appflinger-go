@@ -147,6 +147,8 @@ type controlChannelRequest struct {
 	Message string // used in sendMessage()
 	Time    string // used in seek()
 	Visible string // used in setVisible()
+	Rate    string // Used in SetRate()
+	Volume  string // Used in SetVolume()
 
 	// Used in addSourceBuffer() and various other MSE related functions
 	SourceId string
@@ -284,6 +286,8 @@ type AppflingerListener interface {
 	GetBuffered(sessionId string, instanceId string, result *GetBufferedResult) (err error)
 	SetRect(sessionId string, instanceId string, x int, y int, width int, height int) (err error)
 	SetVisible(sessionId string, instanceId string, visible bool) (err error)
+	SetRate(sessionId string, instanceId string, rate float64) (err error)
+	SetVolume(sessionId string, instanceId string, volume float64) (err error)
 
 	// Control Channel functions - MSE related
 
@@ -565,6 +569,34 @@ func processRPCRequest(req *controlChannelRequest, payload []byte, appf Appfling
 		//log.Println(fmt.Sprintf("service: %s -- %s", req.Service, req.Visible))
 		if appf != nil {
 			err = appf.SetVisible(req.SessionId, req.InstanceId, strToBool(req.Visible))
+		}
+	} else if req.Service == "setRate" {
+		//log.Println(fmt.Sprintf("service: %s -- %s", req.Service, req.Rate))
+		var rate float64
+		rate, err = strconv.ParseFloat(req.Rate, 64)
+		if err != nil {
+			err = errors.New("Failed to parse float: " + req.Rate)
+			log.Println(err)
+			resp, err = marshalRPCResponse(result, resultPayload, err)
+			return
+		}
+
+		if appf != nil {
+			err = appf.SetRate(req.SessionId, req.InstanceId, rate)
+		}
+	} else if req.Service == "setVolume" {
+		//log.Println(fmt.Sprintf("service: %s -- %s", req.Service, req.Volume))
+		var volume float64
+		volume, err = strconv.ParseFloat(req.Volume, 64)
+		if err != nil {
+			err = errors.New("Failed to parse float: " + req.Volume)
+			log.Println(err)
+			resp, err = marshalRPCResponse(result, resultPayload, err)
+			return
+		}
+
+		if appf != nil {
+			err = appf.SetVolume(req.SessionId, req.InstanceId, volume)
 		}
 	} else if req.Service == "addSourceBuffer" {
 		//log.Println(fmt.Sprintf("service: %s -- %s, %s", req.Service, req.SourceId, req.Type))

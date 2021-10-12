@@ -239,6 +239,16 @@ func (self *AppflingerListener) SetVisible(sessionId string, instanceId string, 
 	return
 }
 
+func (self *AppflingerListener) SetRate(sessionId string, instanceId string, rate float64) (err error) {
+	err = nil
+	return
+}
+
+func (self *AppflingerListener) SetVolume(sessionId string, instanceId string, volume float64) (err error) {
+	err = nil
+	return
+}
+
 func (self *AppflingerListener) AddSourceBuffer(sessionId string, instanceId string, sourceId string, mimeType string) (err error) {
 	err = nil
 	return
