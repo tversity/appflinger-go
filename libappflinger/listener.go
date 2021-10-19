@@ -17,9 +17,7 @@ import (
 	"unsafe"
 )
 
-const (
-	MockDuration = 60
-)
+const ()
 
 // This struct will implement the appflinger.AppFlinger interface which is needed in order to
 // receive the control channel commands and process them
@@ -207,15 +205,27 @@ func (self *AppflingerListener) GetReadyState(sessionId string, instanceId strin
 }
 
 func (self *AppflingerListener) GetSeekable(sessionId string, instanceId string, result *appflinger.GetSeekableResult) (err error) {
+	var duration float64
+	duration, err = self.GetDuration(sessionId, instanceId)
+	if err != nil {
+		return
+	}
+
 	result.Start = []float64{0}
-	result.End = []float64{MockDuration}
+	result.End = []float64{duration}
 	err = nil
 	return
 }
 
 func (self *AppflingerListener) GetBuffered(sessionId string, instanceId string, result *appflinger.GetBufferedResult) (err error) {
+	var duration float64
+	duration, err = self.GetDuration(sessionId, instanceId)
+	if err != nil {
+		return
+	}
+
 	result.Start = []float64{0}
-	result.End = []float64{MockDuration}
+	result.End = []float64{duration}
 	err = nil
 	return
 }
