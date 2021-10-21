@@ -760,10 +760,8 @@ func controlChannelRun(ctx *SessionContext, appf AppflingerListener) (err error)
 			payloadSize, err = strconv.ParseUint(req.PayloadSize, 10, 0)
 			if err != nil {
 				err = errors.New("Failed to parse payload size integer: " + req.PayloadSize)
-			}
-			if uint64(len(payload)) != payloadSize {
+			} else if uint64(len(payload)) != payloadSize {
 				err = fmt.Errorf("Payload size mismatch, %d != %d", len(payload), payloadSize)
-				log.Println(err)
 			}
 			if err != nil {
 				log.Println(err)
