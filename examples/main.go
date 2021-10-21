@@ -54,10 +54,20 @@ func StartSession() {
 	if err != nil {
 		log.Fatal("Failed to start session: ", err)
 	}
+
+	err = appflinger.SessionUIStreamStart(sessionCtx, appflinger.UI_FMT_TS_H264, false, 1000000)
+	if err != nil {
+		log.Fatal("Failed to start ui streaming: ", err)
+	}
 }
 
 func StopSession() {
-	err := appflinger.SessionStop(sessionCtx)
+	err := appflinger.SessionUIStreamStop(sessionCtx)
+	if err != nil {
+		log.Fatal("Failed to stop ui sreaming: ", err)
+	}
+
+	err = appflinger.SessionStop(sessionCtx)
 	if err != nil {
 		log.Fatal("Failed to stop session: ", sessionCtx.SessionId, err)
 	}

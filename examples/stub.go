@@ -31,21 +31,21 @@ func NewAppflingerListenerStub() (self *AppflingerListenerStub) {
 // Stub implementation of all the methods in  appflinger.AppFlinger interface
 // A full client should replace the stub with proper implementation
 
-func (self *AppflingerListenerStub) Load(instanceId string, url string) (err error) {
+func (self *AppflingerListenerStub) Load(sessionId string, instanceId string, url string) (err error) {
 	err = nil
 	self.loaded = true
 	self.paused = true
 	return
 }
 
-func (self *AppflingerListenerStub) CancelLoad(instanceId string) (err error) {
+func (self *AppflingerListenerStub) CancelLoad(sessionId string, instanceId string) (err error) {
 	err = nil
 	self.loaded = false
 	self.paused = true
 	return
 }
 
-func (self *AppflingerListenerStub) Pause(instanceId string) (err error) {
+func (self *AppflingerListenerStub) Pause(sessionId string, instanceId string) (err error) {
 	if self.loaded {
 		err = nil
 		self.paused = true
@@ -55,7 +55,7 @@ func (self *AppflingerListenerStub) Pause(instanceId string) (err error) {
 	return
 }
 
-func (self *AppflingerListenerStub) Play(instanceId string) (err error) {
+func (self *AppflingerListenerStub) Play(sessionId string, instanceId string) (err error) {
 	if self.loaded {
 		err = nil
 		self.paused = false
@@ -65,7 +65,7 @@ func (self *AppflingerListenerStub) Play(instanceId string) (err error) {
 	return
 }
 
-func (self *AppflingerListenerStub) Seek(instanceId string, time float64) (err error) {
+func (self *AppflingerListenerStub) Seek(sessionId string, instanceId string, time float64) (err error) {
 	if self.loaded {
 		err = nil
 	} else {
@@ -74,7 +74,7 @@ func (self *AppflingerListenerStub) Seek(instanceId string, time float64) (err e
 	return
 }
 
-func (self *AppflingerListenerStub) GetPaused(instanceId string) (paused bool, err error) {
+func (self *AppflingerListenerStub) GetPaused(sessionId string, instanceId string) (paused bool, err error) {
 	if self.loaded {
 		err = nil
 		paused = self.paused
@@ -84,7 +84,7 @@ func (self *AppflingerListenerStub) GetPaused(instanceId string) (paused bool, e
 	return
 }
 
-func (self *AppflingerListenerStub) GetSeeking(instanceId string) (seeking bool, err error) {
+func (self *AppflingerListenerStub) GetSeeking(sessionId string, instanceId string) (seeking bool, err error) {
 	if self.loaded {
 		err = nil
 		seeking = false
@@ -94,7 +94,7 @@ func (self *AppflingerListenerStub) GetSeeking(instanceId string) (seeking bool,
 	return
 }
 
-func (self *AppflingerListenerStub) GetDuration(instanceId string) (duration float64, err error) {
+func (self *AppflingerListenerStub) GetDuration(sessionId string, instanceId string) (duration float64, err error) {
 	if self.loaded {
 		err = nil
 		duration = MockDuration
@@ -104,7 +104,7 @@ func (self *AppflingerListenerStub) GetDuration(instanceId string) (duration flo
 	return
 }
 
-func (self *AppflingerListenerStub) GetCurrentTime(instanceId string) (time float64, err error) {
+func (self *AppflingerListenerStub) GetCurrentTime(sessionId string, instanceId string) (time float64, err error) {
 	if self.loaded {
 		err = nil
 		time = 0
@@ -114,7 +114,7 @@ func (self *AppflingerListenerStub) GetCurrentTime(instanceId string) (time floa
 	return
 }
 
-func (self *AppflingerListenerStub) GetNetworkState(instanceId string) (networkState int, err error) {
+func (self *AppflingerListenerStub) GetNetworkState(sessionId string, instanceId string) (networkState int, err error) {
 	if self.loaded {
 		err = nil
 		networkState = appflinger.NETWORK_STATE_LOADED
@@ -124,7 +124,7 @@ func (self *AppflingerListenerStub) GetNetworkState(instanceId string) (networkS
 	return
 }
 
-func (self *AppflingerListenerStub) GetReadyState(instanceId string) (readyState int, err error) {
+func (self *AppflingerListenerStub) GetReadyState(sessionId string, instanceId string) (readyState int, err error) {
 	if self.loaded {
 		err = nil
 		readyState = appflinger.READY_STATE_HAVE_ENOUGH_DATA
@@ -134,17 +134,16 @@ func (self *AppflingerListenerStub) GetReadyState(instanceId string) (readyState
 	return
 }
 
-func (self *AppflingerListenerStub) GetMaxTimeSeekable(instanceId string) (maxTimeSeekable float64, err error) {
+func (self *AppflingerListenerStub) GetSeekable(sessionId string, instanceId string, result *appflinger.GetSeekableResult) (err error) {
 	if self.loaded {
 		err = nil
-		maxTimeSeekable = 0
 	} else {
 		err = errors.New("No video loaded")
 	}
 	return
 }
 
-func (self *AppflingerListenerStub) GetBuffered(instanceId string, result *appflinger.GetBufferedResult) (err error) {
+func (self *AppflingerListenerStub) GetBuffered(sessionId string, instanceId string, result *appflinger.GetBufferedResult) (err error) {
 	if self.loaded {
 		err = nil
 		result.Start = []float64{0}
@@ -155,7 +154,7 @@ func (self *AppflingerListenerStub) GetBuffered(instanceId string, result *appfl
 	return
 }
 
-func (self *AppflingerListenerStub) SetRect(instanceId string, x int, y int, width int, height int) (err error) {
+func (self *AppflingerListenerStub) SetRect(sessionId string, instanceId string, x int, y int, width int, height int) (err error) {
 	if self.loaded {
 		err = nil
 	} else {
@@ -164,7 +163,7 @@ func (self *AppflingerListenerStub) SetRect(instanceId string, x int, y int, wid
 	return
 }
 
-func (self *AppflingerListenerStub) SetVisible(instanceId string, visible bool) (err error) {
+func (self *AppflingerListenerStub) SetVisible(sessionId string, instanceId string, visible bool) (err error) {
 	if self.loaded {
 		err = nil
 	} else {
@@ -173,7 +172,7 @@ func (self *AppflingerListenerStub) SetVisible(instanceId string, visible bool) 
 	return
 }
 
-func (self *AppflingerListenerStub) AddSourceBuffer(instanceId string, sourceId string, mimeType string) (err error) {
+func (self *AppflingerListener) SetRate(sessionId string, instanceId string, rate float64) (err error) {
 	if self.loaded {
 		err = nil
 	} else {
@@ -182,7 +181,7 @@ func (self *AppflingerListenerStub) AddSourceBuffer(instanceId string, sourceId 
 	return
 }
 
-func (self *AppflingerListenerStub) RemoveSourceBuffer(instanceId string, sourceId string) (err error) {
+func (self *AppflingerListener) SetVolume(sessionId string, instanceId string, volume float64) (err error) {
 	if self.loaded {
 		err = nil
 	} else {
@@ -191,7 +190,7 @@ func (self *AppflingerListenerStub) RemoveSourceBuffer(instanceId string, source
 	return
 }
 
-func (self *AppflingerListenerStub) ResetSourceBuffer(instanceId string, sourceId string) (err error) {
+func (self *AppflingerListenerStub) AddSourceBuffer(sessionId string, instanceId string, sourceId string, mimeType string) (err error) {
 	if self.loaded {
 		err = nil
 	} else {
@@ -200,7 +199,25 @@ func (self *AppflingerListenerStub) ResetSourceBuffer(instanceId string, sourceI
 	return
 }
 
-func (self *AppflingerListenerStub) AppendBuffer(instanceId string, sourceId string, appendWindowStart float64, appendWindowEnd float64,
+func (self *AppflingerListenerStub) RemoveSourceBuffer(sessionId string, instanceId string, sourceId string) (err error) {
+	if self.loaded {
+		err = nil
+	} else {
+		err = errors.New("No video loaded")
+	}
+	return
+}
+
+func (self *AppflingerListenerStub) AbortSourceBuffer(sessionId string, instanceId string, sourceId string) (err error) {
+	if self.loaded {
+		err = nil
+	} else {
+		err = errors.New("No video loaded")
+	}
+	return
+}
+
+func (self *AppflingerListenerStub) AppendBuffer(sessionId string, instanceId string, sourceId string, appendWindowStart float64, appendWindowEnd float64,
 	bufferId string, bufferOffset int, bufferLength int, payload []byte, result *appflinger.GetBufferedResult) (err error) {
 	if self.loaded {
 		result.Start = nil
@@ -212,48 +229,134 @@ func (self *AppflingerListenerStub) AppendBuffer(instanceId string, sourceId str
 	return
 }
 
-func (self *AppflingerListenerStub) LoadResource(url string, method string, headers string, resourceId string,
-	byteRangeStart int, byteRangeEnd int, sequenceNumber int, payload []byte, result *appflinger.LoadResourceResult) (err error) {
+func (self *AppflingerListenerStub) SetAppendMode(sessionId string, instanceId string, sourceId string, mode int) (err error) {
 	if self.loaded {
 		err = nil
-		result.Code = "404"
-		result.Headers = ""
-		result.BufferId = ""
-		result.BufferLength = 0
-		result.Payload = nil
 	} else {
 		err = errors.New("No video loaded")
 	}
 	return
 }
 
-func (self *AppflingerListenerStub) SendMessage(message string) (result string, err error) {
+func (self *AppflingerListenerStub) SetAppendTimestampOffset(sessionId string, instanceId string, sourceId string, timestampOffset float64) (err error) {
+	if self.loaded {
+		err = nil
+	} else {
+		err = errors.New("No video loaded")
+	}
+	return
+}
+
+func (self *AppflingerListenerStub) RemoveBufferRange(sessionId string, instanceId string, sourceId string, start float64, end float64) (err error) {
+	if self.loaded {
+		err = nil
+	} else {
+		err = errors.New("No video loaded")
+	}
+	return
+}
+
+func (self *AppflingerListenerStub) ChangeSourceBufferType(sessionId string, instanceId string, sourceId string, mimeType string) (err error) {
+	if self.loaded {
+		err = nil
+	} else {
+		err = errors.New("No video loaded")
+	}
+	return
+}
+
+func (self *AppflingerListenerStub) LoadResource(sessionId string, url string, method string, headers string, resourceId string,
+	byteRangeStart int, byteRangeEnd int, sequenceNumber int, payload []byte, result *appflinger.LoadResourceResult) (err error) {
+	err = nil
+	result.Code = "404"
+	result.Headers = ""
+	result.BufferId = ""
+	result.BufferLength = 0
+	result.Payload = nil
+	return
+}
+
+func (self *AppflingerListenerStub) DeleteResource(sessionId string, BufferId string) (err error) {
+	err = nil
+	return
+}
+
+func (self *AppflingerListenerStub) RequestKeySystem(sessionId string, keySystem string, supportedConfigurations []appflinger.EMEMediaKeySystemConfiguration, result *appflinger.RequestKeySystemResult) (err error) {
+	err = nil
+	return
+}
+
+func (self *AppflingerListenerStub) CdmCreate(sessionId string, keySystem string, securityOrigin string, allowDistinctiveIdentifier bool, allowPersistentState bool) (cdmId string, err error) {
+	err = nil
+	return
+}
+
+func (self *AppflingerListenerStub) CdmSetServerCertificate(sessionId string, cdmId string, payload []byte) (err error) {
+	err = nil
+	return
+}
+
+func (self *AppflingerListenerStub) CdmSessionCreate(sessionId string, eventInstanceId string, cdmId string, sessionType string, initDataType string, payload []byte) (cdmSessionId string, expiration float64, err error) {
+	err = nil
+	return
+}
+
+func (self *AppflingerListenerStub) CdmSessionUpdate(sessionId string, eventInstanceId string, cdmId string, cdmSessionId string, payload []byte) (err error) {
+	err = nil
+	return
+}
+
+func (self *AppflingerListenerStub) CdmSessionLoad(sessionId string, eventInstanceId string, cdmId string, cdmSessionId string) (loaded bool, expiration float64, err error) {
+	err = nil
+	return
+}
+
+func (self *AppflingerListenerStub) CdmSessionRemove(sessionId string, eventInstanceId string, cdmId string, cdmSessionId string) (err error) {
+	err = nil
+	return
+}
+
+func (self *AppflingerListenerStub) CdmSessionClose(sessionId string, eventInstanceId string, cdmId string, cdmSessionId string) (err error) {
+	err = nil
+	return
+}
+
+func (self *AppflingerListenerStub) SetCdm(sessionId string, instanceId string, cdmId string) (err error) {
+	if self.loaded {
+		err = nil
+	} else {
+		err = errors.New("No video loaded")
+	}
+	return
+}
+
+func (self *AppflingerListenerStub) SendMessage(sessionId string, message string) (result string, err error) {
 	err = nil
 	result = ""
 	return
 }
 
-func (self *AppflingerListenerStub) OnPageLoad() (err error) {
+func (self *AppflingerListenerStub) OnPageLoad(sessionId string) (err error) {
 	err = nil
 	return
 }
 
-func (self *AppflingerListenerStub) OnAddressBarChanged(url string) (err error) {
+func (self *AppflingerListenerStub) OnAddressBarChanged(sessionId string, url string) (err error) {
 	err = nil
 	return
 }
 
-func (self *AppflingerListenerStub) OnTitleChanged(title string) (err error) {
+func (self *AppflingerListenerStub) OnTitleChanged(sessionId string, title string) (err error) {
 	err = nil
 	return
 }
 
-func (self *AppflingerListenerStub) OnPageClose() (err error) {
+func (self *AppflingerListenerStub) OnPageClose(sessionId string) (err error) {
 	err = nil
 	return
 }
 
-func (self *AppflingerListenerStub) OnUIFrame(isCodecConfig bool, isKeyFrame bool, idx int, pts int, dts int, data []byte) (err error) {
+func (self *AppflingerListenerStub) OnUIFrame(sessionId string, isCodecConfig bool, isKeyFrame bool, idx int, pts int, dts int, data []byte) (err error) {
 	err = nil
 	return
 }
