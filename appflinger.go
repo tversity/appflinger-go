@@ -78,6 +78,7 @@ const (
 	UI_FMT_TS_H264  = "mp2t;h264"
 	UI_FMT_MP4_H264 = "mp4;h264"
 	UI_FMT_WEBM_VP8 = "webm;vp8"
+	UI_FMT_WEBM_VP9 = "webm;vp9"
 	UI_FMT_MPD_TS   = "mpd;mp2"
 	UI_FMT_MPD_MP4  = "mpd;mp4"
 	UI_FMT_MPD_WEBM = "mpd;webm"
@@ -106,6 +107,7 @@ var _ALLOWED_UI_FMT = map[string]bool{
 	UI_FMT_TS_H264:  true,
 	UI_FMT_MP4_H264: true,
 	UI_FMT_WEBM_VP8: true,
+	UI_FMT_WEBM_VP9: true,
 	UI_FMT_MPD_TS:   true,
 	UI_FMT_MPD_MP4:  true,
 	UI_FMT_MPD_WEBM: true,
