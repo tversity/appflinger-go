@@ -1224,7 +1224,7 @@ func controlChannelRoutine(ctx *SessionContext, appf AppflingerListener) {
 // The arguments to this function are as per the description of the /osb/session/start API in
 // the "AppFlinger API and Client Integration Guide".
 func SessionStart(serverProtocolHost string, sessionId string, browserURL string, pullMode bool, isVideoPassthru bool, browserUIOutputURL string,
-	videoStreamURL string, appf AppflingerListener) (ctx *SessionContext, err error) {
+	videoStreamURL string, width int, height int, appf AppflingerListener) (ctx *SessionContext, err error) {
 	var cookieJar *cookiejar.Jar
 	ctx = nil
 
@@ -1254,6 +1254,12 @@ func SessionStart(serverProtocolHost string, sessionId string, browserURL string
 	if sessionId != "" {
 		uri += "&session_id=${SID}"
 	}
+	if width > 0 && width <= 3840 {
+		uri += "&width=${WIDTH}"
+	}
+	if height > 0 && height <= 2160 {
+		uri += "&height=${HEIGHT}"
+	}
 
 	uri = replaceVars(uri, []string{
 		"${PROTHOST}",
@@ -1261,12 +1267,16 @@ func SessionStart(serverProtocolHost string, sessionId string, browserURL string
 		"${VURL}",
 		"${UURL}",
 		"${SID}",
+		"${WIDTH}",
+		"${HEIGHT}",
 	}, []string{
 		serverProtocolHost,
 		url.QueryEscape(browserURL),
 		url.QueryEscape(videoStreamURL),
 		url.QueryEscape(browserUIOutputURL),
 		url.QueryEscape(sessionId),
+		strconv.Itoa(width),
+		strconv.Itoa(height),
 	})
 
 	// Make the request
