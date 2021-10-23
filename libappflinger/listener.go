@@ -10,7 +10,7 @@ import (
 	// #include "callbacks.h"
 	"C"
 
-	"github.com/tversity/appflinger-go"
+	appflinger "github.com/tversity/appflinger-go"
 )
 import (
 	"fmt"

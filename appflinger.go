@@ -1347,7 +1347,7 @@ func SessionGetSessionContext(sessionId string) (ctx *SessionContext, err error)
 }
 
 // SessionSendEvent is used to inject input into a session.
-func SessionSendEvent(ctx *SessionContext, eventType string, code int, char rune, x int, y int) (err error) {
+func SessionSendEvent(ctx *SessionContext, eventType string, code int, char rune, mod int, x int, y int) (err error) {
 	// Construct the URL
 	uri := _SESSION_EVENT_URL
 	eventType = strings.ToLower(eventType)
@@ -1364,6 +1364,10 @@ func SessionSendEvent(ctx *SessionContext, eventType string, code int, char rune
 		uri += "&char=${CHAR}"
 	}
 
+	if mod > 0 {
+		uri += "&mod=${MOD}"
+	}
+
 	codeString := strconv.Itoa(code)
 
 	uri = replaceVars(uri, []string{
@@ -1372,6 +1376,7 @@ func SessionSendEvent(ctx *SessionContext, eventType string, code int, char rune
 		"${TYPE}",
 		"${KEYCODE}",
 		"${CHAR}",
+		"${MOD}",
 		"${X}",
 		"${Y}",
 	}, []string{
@@ -1380,6 +1385,7 @@ func SessionSendEvent(ctx *SessionContext, eventType string, code int, char rune
 		eventType,
 		codeString,
 		codeString,
+		strconv.Itoa(mod),
 		strconv.Itoa(x),
 		strconv.Itoa(y),
 	})
