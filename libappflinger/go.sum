@@ -1,7 +1,5 @@
 github.com/nareix/joy4 v0.0.0-20200507095837-05a4ffbb5369 h1:Yp0zFEufLz0H7jzffb4UPXijavlyqlYeOg7dcyVUNnQ=
 github.com/nareix/joy4 v0.0.0-20200507095837-05a4ffbb5369/go.mod h1:aFJ1ZwLjvHN4yEzE5Bkz8rD8/d8Vlj3UIuvz2yfET7I=
-github.com/tversity/appflinger-go v0.0.0-20180830215208-beebf618df23 h1:Jp/Rs28MxOQAeyiNJhMAuYLq8RqaAm4IQQ3BRRPzA8g=
-github.com/tversity/appflinger-go v0.0.0-20180830215208-beebf618df23/go.mod h1:yu4jPEvRZrVHujyDMqnshUk400qZjB0ANVoow8DiK0o=
 github.com/tversity/appflinger-go v0.0.0-20211022030704-6ea0e80e6d4d h1:57/5cFZs5KhRCA740a8hXFzzgV+5uiK0ypdVkR8oolY=
 github.com/tversity/appflinger-go v0.0.0-20211022030704-6ea0e80e6d4d/go.mod h1:yu4jPEvRZrVHujyDMqnshUk400qZjB0ANVoow8DiK0o=
 golang.org/x/net v0.0.0-20211020060615-d418f374d309 h1:A0lJIi+hcTR6aajJH4YqKWwohY4aW9RO7oRMcdv+HKI=
