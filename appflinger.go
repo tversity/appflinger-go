@@ -1368,8 +1368,6 @@ func SessionSendEvent(ctx *SessionContext, eventType string, code int, char rune
 		uri += "&mod=${MOD}"
 	}
 
-	codeString := strconv.Itoa(code)
-
 	uri = replaceVars(uri, []string{
 		"${PROTHOST}",
 		"${SID}",
@@ -1383,8 +1381,8 @@ func SessionSendEvent(ctx *SessionContext, eventType string, code int, char rune
 		ctx.ServerProtocolHost,
 		url.QueryEscape(ctx.SessionId),
 		eventType,
-		codeString,
-		codeString,
+		strconv.Itoa(code),
+		strconv.Itoa(int(char)),
 		strconv.Itoa(mod),
 		strconv.Itoa(x),
 		strconv.Itoa(y),
