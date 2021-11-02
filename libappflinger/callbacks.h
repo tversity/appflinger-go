@@ -10,6 +10,9 @@ extern "C" {
 typedef int on_ui_frame_cb_t(const char *session_id, int is_codec_config, int is_key_frame, int idx, long long pts, long long dts,
     void *data, unsigned data_len);
 
+typedef int on_ui_image_frame_cb_t(const char *session_id, int x, int y, int width, int height, int img_size, int alpha_size, 
+    int is_frame, void *img_data, void *alpha_data);
+
 typedef int load_cb_t(const char *session_id, const char *instance_id, const char *url);
 
 typedef int cancel_load_cb_t(const char *session_id, const char *instance_id);
@@ -37,6 +40,7 @@ typedef int set_rect_cb_t(const char *session_id, const char *instance_id, int x
 typedef struct appflinger_callbacks_struct
 {
     on_ui_frame_cb_t *on_ui_frame_cb;
+    on_ui_image_frame_cb_t *on_ui_image_frame_cb;
     load_cb_t *load_cb;
     set_rect_cb_t *set_rect_cb;
     cancel_load_cb_t *cancel_load_cb;
@@ -54,6 +58,9 @@ typedef struct appflinger_callbacks_struct
 // Helper functions to invoke the above CBs from Go
 int invoke_on_ui_frame(on_ui_frame_cb_t *cb, const char *session_id, int is_codec_config, int is_key_frame, int idx, long long pts,
     long long dts, void *data, unsigned data_len);
+
+int invoke_on_ui_image_frame(on_ui_image_frame_cb_t *cb, const char *session_id, int x, int y, int width, int height, int img_size, int alpha_size, int is_frame, 
+    void *img_data, void *alpha_data);
 
 int invoke_load(load_cb_t *cb, const char *session_id, const char *instance_id, const char *url);
 

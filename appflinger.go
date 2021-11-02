@@ -19,6 +19,7 @@
 package appflinger
 
 import (
+	"bufio"
 	"bytes"
 	"crypto/tls"
 	"encoding/json"
@@ -31,6 +32,7 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
 
@@ -251,6 +253,17 @@ type LoadResourceResult struct {
 	Payload      []byte
 }
 
+// UIImageHeader represents the json header preceding each image in the UI image stream
+type UIImageHeader struct {
+	X 			int `json:"x,string"` 			// x position of image on the screen
+	Y 			int `json:"y,string"` 			// y position of image on the screen
+	Width		int	`json:"width,string"`		// image width
+	Height 		int	`json:"height,string"`		// image height
+	Size		int	`json:"size,string"`		// the size in bytes of the entire binary payload
+	AlphaSize	int	`json:"alphaSize,string"`	// the size of the alpha image
+	IsFrame		int	`json:"frame,string"`		// 0|1 indicating a completed video frame
+}
+
 // TimeIntervalArrays is the returned result by GetBuffered() and GetSeekable() in the AppflingerListener interface
 type TimeIntervalArrays struct {
 	Start []float64
@@ -355,6 +368,7 @@ type AppflingerListener interface {
 	// Misc Go SDK functions
 
 	OnUIFrame(sessionId string, isCodecConfig bool, isKeyFrame bool, idx int, pts int, dts int, data []byte) (err error)
+	OnUIImageFrame(sessionId string, header UIImageHeader, imgData []byte, alphaData []byte) (err error)
 }
 
 var (
@@ -1394,16 +1408,22 @@ func SessionSendEvent(ctx *SessionContext, eventType string, code int, char rune
 func SessionGetUIURL(ctx *SessionContext, fmt string, tsDiscon bool, bitrate int) (uri string, err error) {
 	err = nil
 
-	// Construct the URL
-	uri = _SESSION_UI_URL
-	if bitrate > 0 {
-		uri += "&bitrate=${BITRATE}"
-	}
-
 	if !_ALLOWED_UI_FMT[fmt] {
 		err = errors.New("Invalid format: " + fmt)
 		return
 	}
+	// Construct the URL
+	uri = _SESSION_UI_URL
+
+	// isAlphaGrayscale ? "png8" : "png32"
+	if fmt == UI_FMT_JPEG {
+		uri += "&alpha=png32"
+	}
+	
+	if bitrate > 0 {
+		uri += "&bitrate=${BITRATE}"
+	}
+	
 	tsDisconStr := "0"
 	if tsDiscon {
 		tsDisconStr = "1"
@@ -1462,7 +1482,177 @@ func pktToBitstream(videoCodecData av.VideoCodecData, pkt *av.Packet) (data []by
 	return
 }
 
-func uiStream(ctx *SessionContext, uri string) (err error) {
+func writeFile (fname string, bytes []byte) error {
+	outFile, err := os.Create(fname)
+	if err != nil {
+		return err
+	}
+	defer outFile.Close()
+	outWriter := bufio.NewWriter(outFile)
+	if outWriter == nil {
+		return errors.New("Failed to create a buffered io writer")
+	}
+	_, err = outWriter.Write(bytes)
+	if err != nil {
+		return errors.New("Failed to write file " + fname)
+	}
+	outWriter.Flush()
+	return err
+}
+
+func uiImageReadRoutine(ctx *SessionContext, reader io.ReadCloser, format string, errChan chan error, debugMode bool) {
+
+	type uiImage struct {
+		header	*UIImageHeader
+		data	[]byte
+		alpha	[]byte
+	}
+
+	var err error
+
+	br := bufio.NewReader(reader)
+
+	img := uiImage{
+		data: make([]byte, 0),
+		alpha: make([]byte, 0),
+	} 
+
+	imgStreamDir := "testImgStream" // used to write image files in the debug mode
+	if debugMode {
+		os.RemoveAll(imgStreamDir)
+		os.MkdirAll(imgStreamDir, os.ModePerm)
+	}
+	
+	i := 0
+	
+	for {
+		i++
+
+		if img.header == nil {
+			var data []byte
+			data, err = br.ReadBytes('\n') // including the delimiter
+			if err != nil {
+				err = fmt.Errorf("failed to read image header: %v", err)
+				errChan <- err
+				return 
+			}
+			// Check if data followed by the second \n
+			var nl []byte
+			nl, err = br.Peek(1)	
+			if err != nil {
+				errChan <- err
+				return
+			}
+			if nl[0] != '\n' { // 0xa 
+				continue
+			}
+			
+			data = data[:len(data) - 1] // remove trailing \n
+
+			if len(data) == 0 { // 'keep alive' request
+				continue
+			}
+
+			// Skip the second \n
+			_, err = br.Discard(1)
+			if err != nil {
+				errChan <- err
+				return
+			}
+
+			jsonHeader := UIImageHeader{}
+			err = json.Unmarshal(data, &jsonHeader)
+			if err != nil {
+				err = fmt.Errorf("failed to unmarshal image header %#v, reason: %v", data, err)
+				errChan <- err
+				return
+			}
+			if debugMode {
+				fmt.Printf("--- uiImageReadRoutine: jsonHeader = %+v \n", jsonHeader)
+			}
+			img.header = &jsonHeader
+		}
+
+		imgBytes := make([]byte, img.header.Size - img.header.AlphaSize - len(img.data))
+		_, err = io.ReadFull(br, imgBytes)
+		if err != nil {
+			if err == io.ErrUnexpectedEOF {
+				img.data = append(img.data, imgBytes...)
+				continue
+			}
+			err = fmt.Errorf("unable to read image chunk: %v", err)
+			errChan <- err
+			return 
+		}
+		img.data = append(img.data, imgBytes...)
+		if debugMode {
+			err = writeFile(imgStreamDir + "/out" + strconv.Itoa(i) + "." + format, img.data)
+			if err != nil {
+				log.Println(err)
+			}
+		}
+
+		if img.header.AlphaSize > 0 {
+			imgBytes := make([]byte, img.header.AlphaSize - len(img.alpha))
+			_, err = io.ReadFull(br, imgBytes)
+			if err != nil {
+				if err == io.ErrUnexpectedEOF {
+					img.alpha = append(img.alpha, imgBytes...)
+					continue
+				}
+				err = fmt.Errorf("unable to read alpha chunk: %v", err)
+				errChan <- err
+				return 
+			}
+			img.alpha = append(img.alpha, imgBytes...)
+			if debugMode {
+				err = writeFile(imgStreamDir + "/out" + strconv.Itoa(i) + "alpha.png", img.alpha)
+				if err != nil {
+					log.Println(err)
+				}
+			}
+		}
+
+		err = ctx.appflingerListener.OnUIImageFrame(ctx.SessionId, *img.header, img.data, img.alpha)
+		if err != nil {
+			err = fmt.Errorf("UI frame listener failed: %v", err)
+			errChan <- err
+			return
+		}
+		img = uiImage{
+			data: make([]byte, 0),
+			alpha: make([]byte, 0),
+		} 
+	}
+}
+
+func uiImageStream(ctx *SessionContext, uri string, format string, debugMode bool) (err error) {
+	var reader io.ReadCloser
+	reader, err = httpGet(ctx.CookieJar, uri, ctx.shouldStopUI)
+	if err != nil {
+		err = fmt.Errorf("Failed HTTP request for UI streaming: %v", err)
+		return
+	}
+	defer reader.Close()
+
+	errChan := make(chan error, 1)
+
+	go uiImageReadRoutine(ctx, reader, format, errChan, debugMode)
+
+	select {
+	case <-ctx.shouldStopUI:
+		err = ErrInterrupted
+		return
+	case err = <-errChan:
+		if err != nil {
+			return
+		}
+	}
+
+	return nil
+}
+
+func uiVideoStream(ctx *SessionContext, uri string) (err error) {
 	var reader io.ReadCloser
 	reader, err = httpGet(ctx.CookieJar, uri, ctx.shouldStopUI)
 	if err != nil {
@@ -1530,8 +1720,13 @@ func uiStream(ctx *SessionContext, uri string) (err error) {
 	return nil
 }
 
-func uiStreamRoutine(ctx *SessionContext, uri string) {
-	err := uiStream(ctx, uri)
+func uiStreamRoutine(ctx *SessionContext, uri string, format string, debugMode bool) {
+	var err error
+	if format == UI_FMT_JPEG || format == UI_FMT_PNG {
+		err = uiImageStream(ctx, uri, format, debugMode)
+	} else {
+		err = uiVideoStream(ctx, uri)
+	}
 	if err != nil && err != ErrInterrupted {
 		log.Println("Failed to stream ui with error: ", err)
 	}
@@ -1540,14 +1735,13 @@ func uiStreamRoutine(ctx *SessionContext, uri string) {
 }
 
 // SessionUIStreamStart is used to start streaming the UI, frames will be passed to OnUIFrame() in the AppFlinger listener
-func SessionUIStreamStart(ctx *SessionContext, format string, tsDiscon bool, bitrate int) (err error) {
-	if format != UI_FMT_TS_H264 {
-		return fmt.Errorf("Only format %s is supported by the SDK", UI_FMT_TS_H264)
-	}
-
+func SessionUIStreamStart(ctx *SessionContext, format string, tsDiscon bool, bitrate int, debugMode bool) (err error) {
 	uri, e := SessionGetUIURL(ctx, format, tsDiscon, bitrate)
 	if e != nil {
 		return e
+	}
+	if debugMode {
+		fmt.Printf("--- SessionUIStreamStart: uri = %+v \n", uri)
 	}
 
 	if ctx.isUIStreaming {
@@ -1555,7 +1749,7 @@ func SessionUIStreamStart(ctx *SessionContext, format string, tsDiscon bool, bit
 	}
 
 	ctx.isUIStreaming = true
-	go uiStreamRoutine(ctx, uri)
+	go uiStreamRoutine(ctx, uri, format, debugMode)
 	return nil
 }
 

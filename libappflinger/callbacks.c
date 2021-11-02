@@ -6,6 +6,12 @@ int invoke_on_ui_frame(on_ui_frame_cb_t *cb, const char *session_id, int is_code
     return cb(session_id, is_codec_config, is_key_frame, idx, pts, dts, data, data_len);
 }
 
+int invoke_on_ui_image_frame(on_ui_image_frame_cb_t *cb, const char *session_id, int x, int y, int width, int height, int img_size, int alpha_size, int is_frame, 
+    void *img_data, void *alpha_data)
+{
+    return cb(session_id, x, y, width, height, img_size, alpha_size, is_frame, img_data, alpha_data);
+}
+
 int invoke_load(load_cb_t *cb, const char *session_id, const char *instance_id, const char *url)
 {
     return cb(session_id, instance_id, url);

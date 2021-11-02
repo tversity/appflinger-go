@@ -3,10 +3,10 @@ package main
 import (
 	// #include "callbacks.h"
 	"C"
+	"log"
 
 	"github.com/tversity/appflinger-go"
 )
-import "log"
 
 var (
 	err        error
@@ -44,10 +44,21 @@ func SessionStart(serverProtocolHost *C.char, sessionId *C.char, browserURL *C.c
 	return C.int(len(ctxHandles) - 1)
 }
 
+//export SessionStop
+func SessionStop(ctxIndex C.int) C.int {
+	ctx := ctxHandles[ctxIndex]
+	err = appflinger.SessionStop(ctx)
+	if err != nil {
+		log.Println(err)
+		return -1
+	}
+	return 0
+}
+
 //export SessionUIStreamStart
-func SessionUIStreamStart(ctxHandle C.int, format *C.char, tsDiscon C.int, bitrate C.int) C.int {
+func SessionUIStreamStart(ctxHandle C.int, format *C.char, tsDiscon C.int, bitrate C.int, debugMode C.int) C.int {
 	err = appflinger.SessionUIStreamStart(ctxHandles[ctxHandle], C.GoString(format),
-		GoBool(tsDiscon), int(bitrate))
+		GoBool(tsDiscon), int(bitrate), GoBool(debugMode))
 	if err != nil {
 		log.Println(err)
 		return -1
@@ -123,4 +134,6 @@ func GetErr() *C.char {
 	return C.CString(err.Error())
 }
 
-func main() {}
+func main() {
+	// test()
+}
