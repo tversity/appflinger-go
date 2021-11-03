@@ -4,7 +4,7 @@ import (
 	// #include "callbacks.h"
 	"C"
 
-	"github.com/tversity/appflinger-go"
+	appflinger "github.com/tversity/appflinger-go"
 )
 import "log"
 
@@ -96,8 +96,8 @@ func SessionGetUIURL(ctxHandle C.int, format *C.char, tsDiscon C.int, bitrate C.
 }
 
 //export SessionSendEvent
-func SessionSendEvent(ctxHandle C.int, eventType *C.char, code C.int, ch C.int, x C.int, y C.int) C.int {
-	err = appflinger.SessionSendEvent(ctxHandles[ctxHandle], C.GoString(eventType), int(code), rune(ch), int(x), int(y))
+func SessionSendEvent(ctxHandle C.int, eventType *C.char, code C.int, ch C.int, mod C.int, x C.int, y C.int) C.int {
+	err = appflinger.SessionSendEvent(ctxHandles[ctxHandle], C.GoString(eventType), int(code), rune(ch), int(mod), int(x), int(y))
 	if err != nil {
 		log.Println(err)
 		return -1
