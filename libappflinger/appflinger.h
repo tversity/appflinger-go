@@ -1,0 +1,124 @@
+// file appflinger.h
+
+#include "libappflinger.h"
+
+typedef enum
+{
+	MOD_NONE = 0x0000,
+	MOD_CAPSLOCK = 0x0001,
+	MOD_SHIFT = 0x0002,
+	MOD_CTRL = 0x0004,
+	MOD_ALT = 0x0008,
+	MOD_LEFT_MOUSE_BUTTON = 0x0010,
+	MOD_MIDDLE_MOUSE_BUTTON = 0x0020,
+	MOD_RIGHT_MOUSE_BUTTON = 0x0040,
+	MOD_COMAND = 0x0080,
+	MOD_NUMLOCK = 0x0100,
+	MOD_KEYPAD = 0x0200,
+	MOD_LEFT = 0x0400,
+	MOD_RIGHT = 0x0800,
+} appflinger_send_mod_t;
+
+typedef enum
+{
+	JSK_UNKNOWN = 0,
+	JSK_BACKSPACE = 8,
+	JSK_TAB, // = 9
+	JSK_ENTER = 13,
+	JSK_SHIFT = 16,
+	JSK_CTRL,		// = 17
+	JSK_ALT,		// = 18
+	JSK_PAUSEBREAK, // = 19
+	JSK_CAPSLOCK,	// = 20
+	JSK_ESCAPE = 27,
+	JSK_SPACEBAR = 32, // ?!!!!
+	JSK_PAGEUP = 33,
+	JSK_PAGEDOWN,	// = 34
+	JSK_END,		// = 35
+	JSK_HOME,		// = 36
+	JSK_LEFTARROW,	// = 37
+	JSK_UPARROW,	// = 38
+	JSK_RIGHTARROW, // = 39
+	JSK_DOWNARROW,	// = 40
+	JSK_INSERT = 45,
+	JSK_DELETE, // = 46
+	JSK_0 = 48,
+	JSK_1, // = 49
+	JSK_2, // = 50
+	JSK_3, // = 51
+	JSK_4, // = 52
+	JSK_5, // = 53
+	JSK_6, // = 54
+	JSK_7, // = 55
+	JSK_8, // = 56
+	JSK_9, // = 57
+	JSK_a = 65,
+	JSK_b,		   // = 66
+	JSK_c,		   // = 67
+	JSK_d,		   // = 68
+	JSK_e,		   // = 69
+	JSK_f,		   // = 70
+	JSK_g,		   // = 71
+	JSK_h,		   // = 72
+	JSK_i,		   // = 73
+	JSK_j,		   // = 74
+	JSK_k,		   // = 75
+	JSK_l,		   // = 76
+	JSK_m,		   // = 77
+	JSK_n,		   // = 78
+	JSK_o,		   // = 79
+	JSK_p,		   // = 80
+	JSK_q,		   // = 81
+	JSK_r,		   // = 82
+	JSK_s,		   // = 83
+	JSK_t,		   // = 84
+	JSK_u,		   // = 85
+	JSK_v,		   // = 86
+	JSK_w,		   // = 87
+	JSK_x,		   // = 88
+	JSK_y,		   // = 89
+	JSK_z,		   // = 90
+	JSK_LEFTWKEY,  // = 91
+	JSK_RIGHTWKEY, // = 92
+	JSK_SELECTKEY, // = 93
+	JSK_NUMPAD_0 = 96,
+	JSK_NUMPAD_1, // = 97
+	JSK_NUMPAD_2, // = 98
+	JSK_NUMPAD_3, // = 99
+	JSK_NUMPAD_4, // = 100
+	JSK_NUMPAD_5, // = 101
+	JSK_NUMPAD_6, // = 102
+	JSK_NUMPAD_7, // = 103
+	JSK_NUMPAD_8, // = 104
+	JSK_NUMPAD_9, // = 105
+	JSK_MULTIPLY, // = 106
+	JSK_ADD,	  // = 107
+	JSK_SUBTRACT = 109,
+	JSK_DECIMALPOINT, // = 110
+	JSK_DIVIDE,		  // = 111
+	JSK_F1,			  // = 112
+	JSK_F2,			  // = 113
+	JSK_F3,			  // = 114
+	JSK_F4,			  // = 115
+	JSK_F5,			  // = 116
+	JSK_F6,			  // = 117
+	JSK_F7,			  // = 118
+	JSK_F8,			  // = 119
+	JSK_F9,			  // = 120
+	JSK_F10,		  // = 121
+	JSK_F11,		  // = 122
+	JSK_F12,		  // = 123
+	JSK_NUMLOCK = 144,
+	JSK_SCROLLLOCK, // = 145
+	JSK_SEMICOLON = 186,
+	JSK_EQUALSIGN,	 // = 187
+	JSK_COMMA,		 // = 188
+	JSK_DASH,		 // = 189
+	JSK_PERIOD,		 // = 190
+	JSK_SLASH,		 // = 191
+	JSK_GRAVEACCENT, // = 192
+	JSK_OPENBRACKET = 219,
+	JSK_BACKSLASH,	  // = 220
+	JSK_CLOSEBRACKET, // = 221
+	JSK_SINGLEQUOTE	  // = 222
+} appflinger_js_key_code_t;
