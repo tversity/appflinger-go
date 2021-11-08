@@ -24,7 +24,7 @@ const ()
 type AppflingerListener struct {
 	// C callback pointers
 	// Note - we cannot invoke C function pointers from Go so we use a helper C function to do it
-	// e.g. to invoke the on_ui_frame_cb function pointer we use C.invoke_on_ui_frame()
+	// e.g. to invoke the on_ui_video_frame_cb function pointer we use C.invoke_on_ui_video_frame()
 	cb *C.appflinger_callbacks_t
 }
 
@@ -389,13 +389,13 @@ func (self *AppflingerListener) OnPageClose(sessionId string) (err error) {
 	return
 }
 
-func (self *AppflingerListener) OnUIFrame(sessionId string, isCodecConfig bool, isKeyFrame bool, idx int, pts int, dts int, data []byte) (err error) {
+func (self *AppflingerListener) OnUIVideoFrame(sessionId string, isCodecConfig bool, isKeyFrame bool, idx int, pts int, dts int, data []byte) (err error) {
 	cSessionId := C.CString(sessionId)
 	if self.cb == nil || self.cb.on_ui_image_frame_cb == nil {
 		C.free(unsafe.Pointer(cSessionId))
 		return
 	}
-	rc := C.invoke_on_ui_frame(self.cb.on_ui_frame_cb, cSessionId, CBool(isCodecConfig), CBool(isKeyFrame), C.int(idx), C.longlong(pts),
+	rc := C.invoke_on_ui_video_frame(self.cb.on_ui_video_frame_cb, cSessionId, CBool(isCodecConfig), CBool(isKeyFrame), C.int(idx), C.longlong(pts),
 		C.longlong(dts), C.CBytes(data), C.uint(len(data)))
 	if rc != 0 {
 		err = fmt.Errorf("Failed to process frame")

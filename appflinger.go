@@ -367,7 +367,7 @@ type AppflingerListener interface {
 
 	// Misc Go SDK functions
 
-	OnUIFrame(sessionId string, isCodecConfig bool, isKeyFrame bool, idx int, pts int, dts int, data []byte) (err error)
+	OnUIVideoFrame(sessionId string, isCodecConfig bool, isKeyFrame bool, idx int, pts int, dts int, data []byte) (err error)
 	OnUIImageFrame(sessionId string, header UIImageHeader, imgData []byte, alphaData []byte) (err error)
 }
 
@@ -1695,7 +1695,7 @@ func uiVideoStream(ctx *SessionContext, uri string) (err error) {
 			var data []byte
 			pkt := &pkts[readIndex]
 			data = pktToBitstream(videoCodecData, pkt)
-			err = ctx.appflingerListener.OnUIFrame(ctx.SessionId, pkt.IsKeyFrame, pkt.IsKeyFrame, int(pkt.Idx), int(pkt.CompositionTime), int(pkt.Time), data)
+			err = ctx.appflingerListener.OnUIVideoFrame(ctx.SessionId, pkt.IsKeyFrame, pkt.IsKeyFrame, int(pkt.Idx), int(pkt.CompositionTime), int(pkt.Time), data)
 			if err != nil {
 				err = fmt.Errorf("UI frame listener failed: %v", err)
 				return
@@ -1734,7 +1734,7 @@ func uiStreamRoutine(ctx *SessionContext, uri string, format string, debugMode b
 	ctx.isDone <- true
 }
 
-// SessionUIStreamStart is used to start streaming the UI, frames will be passed to OnUIFrame() in the AppFlinger listener
+// SessionUIStreamStart is used to start streaming the UI, frames will be passed to OnUIVideoFrame() in the AppFlinger listener
 func SessionUIStreamStart(ctx *SessionContext, format string, tsDiscon bool, bitrate int, debugMode bool) (err error) {
 	uri, e := SessionGetUIURL(ctx, format, tsDiscon, bitrate)
 	if e != nil {

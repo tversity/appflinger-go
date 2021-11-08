@@ -1,6 +1,6 @@
 #include "callbacks.h"
 
-int invoke_on_ui_frame(on_ui_frame_cb_t *cb, const char *session_id, int is_codec_config, int is_key_frame, int idx, long long pts,
+int invoke_on_ui_video_frame(on_ui_video_frame_cb_t *cb, const char *session_id, int is_codec_config, int is_key_frame, int idx, long long pts,
     long long dts, void *data, unsigned data_len)
 {
     return cb(session_id, is_codec_config, is_key_frame, idx, pts, dts, data, data_len);
