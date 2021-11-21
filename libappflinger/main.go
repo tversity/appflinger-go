@@ -56,9 +56,9 @@ func SessionStop(ctxIndex C.int) C.int {
 }
 
 //export SessionUIStreamStart
-func SessionUIStreamStart(ctxHandle C.int, format *C.char, tsDiscon C.int, bitrate C.int, debugMode C.int) C.int {
+func SessionUIStreamStart(ctxHandle C.int, format *C.char, tsDiscon C.int, bitrate C.int) C.int {
 	err = appflinger.SessionUIStreamStart(ctxHandles[ctxHandle], C.GoString(format),
-		GoBool(tsDiscon), int(bitrate), GoBool(debugMode))
+		GoBool(tsDiscon), int(bitrate))
 	if err != nil {
 		log.Println(err)
 		return -1
@@ -134,6 +134,4 @@ func GetErr() *C.char {
 	return C.CString(err.Error())
 }
 
-func main() {
-	// test()
-}
+func main() {}

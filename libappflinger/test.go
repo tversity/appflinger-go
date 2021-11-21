@@ -40,8 +40,8 @@ func init() {
 	flag.StringVar(&serverPort, "port", "8080", "The server port")
 	flag.StringVar(&serverIP, "ip", "localhost", "The server IP")
 	flag.StringVar(&browserURL, "url", 
-		// "https://www.youtube.com/tv?env_mediaSourceDevelopment=1", 
-		"https://www.w3.org/2010/05/video/mediaevents.html",
+		"https://www.youtube.com/tv?env_mediaSourceDevelopment=1", 
+		// "https://www.w3.org/2010/05/video/mediaevents.html",
 		"The web address of the page to be loaded")
 }
 
@@ -62,9 +62,9 @@ func start() {
         return
     }
 
-	// uiFormat := appflinger.UI_FMT_JPEG
-	uiFormat := appflinger.UI_FMT_TS_H264
-	rc := SessionUIStreamStart(sessionCtxIndex, C.CString(uiFormat), 0, 1000, 1)
+	uiFormat := appflinger.UI_FMT_JPEG_ALPHA_PNG
+	// uiFormat := appflinger.UI_FMT_TS_H264
+	rc := SessionUIStreamStart(sessionCtxIndex, C.CString(uiFormat), 0, 1000)
     if (rc != 0) {
 		log.Println("Failed to start ui stream")
         return
