@@ -391,7 +391,7 @@ func (self *AppflingerListener) OnPageClose(sessionId string) (err error) {
 
 func (self *AppflingerListener) OnUIVideoFrame(sessionId string, isCodecConfig bool, isKeyFrame bool, idx int, pts int, dts int, data []byte) (err error) {
 	cSessionId := C.CString(sessionId)
-	if self.cb == nil || self.cb.on_ui_image_frame_cb == nil {
+	if self.cb == nil || self.cb.on_ui_video_frame_cb == nil {
 		C.free(unsafe.Pointer(cSessionId))
 		return
 	}
@@ -406,13 +406,15 @@ func (self *AppflingerListener) OnUIVideoFrame(sessionId string, isCodecConfig b
 	return
 }
 
-func (self *AppflingerListener) OnUIImageFrame(sessionId string, header appflinger.UIImageHeader, imgData []byte, alphaData []byte) (err error) {
+func (self *AppflingerListener) OnUIImageFrame(sessionId string, imgData *appflinger.UIImage) (err error) {
 	cSessionId := C.CString(sessionId)
 	if self.cb == nil || self.cb.on_ui_image_frame_cb == nil {
 		C.free(unsafe.Pointer(cSessionId))
 		return
 	}
-	rc := C.invoke_on_ui_image_frame(self.cb.on_ui_image_frame_cb, cSessionId, C.int(header.X), C.int(header.Y), C.int(header.Width), C.int(header.Height), C.int(header.Size - header.AlphaSize), C.int(header.AlphaSize), C.int(header.IsFrame), C.CBytes(imgData), C.CBytes(alphaData))
+	rc := C.invoke_on_ui_image_frame(self.cb.on_ui_image_frame_cb, cSessionId, C.int(imgData.Header.X), C.int(imgData.Header.Y), 
+		C.int(imgData.Header.Width), C.int(imgData.Header.Height), C.int(imgData.Header.Size - imgData.Header.AlphaSize), C.int(imgData.Header.AlphaSize), 
+		C.int(imgData.Header.IsFrame), C.CBytes(imgData.Img), C.CBytes(imgData.AlphaImg))
 	if rc != 0 {
 		err = fmt.Errorf("Failed to process image frame")
 	} else {

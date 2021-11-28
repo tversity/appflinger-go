@@ -84,7 +84,7 @@ func RunSession(shouldStop chan bool, done chan bool) {
 
 	sessionId := SessionGetSessionId(sessionCtxIndex)
 
-	fmt.Println("New session:", sessionId)
+	log.Println("New session:", sessionId)
 
 	// Wait till session is fully started
 	select {
@@ -95,14 +95,14 @@ func RunSession(shouldStop chan bool, done chan bool) {
 	case <-time.After(5 * time.Second):
 	}
 
-	fmt.Println("Running session:", sessionId)
+	log.Println("Running session:", sessionId)
 
 	for {
 
 		// Check if need to abort in a non blocking way
 		select {
 		case <-shouldStop:
-			fmt.Println("Stopping session:", sessionId)
+			log.Println("Stopping session:", sessionId)
 			stop()
 			done <- true
 			return
