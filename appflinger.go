@@ -94,6 +94,8 @@ const (
 	UI_FMT_MPD_WEBM = "mpd;webm"
 	// Image stream format can contain one or two parts separated by semicolon. The first is the RGB image and the second is the alpha image. 
 	// The alpha image is optional part of UI stream, it's not included in some formats.
+	// We parse image stream format before sending to the server, since the server takes the alpha format in a separate query string argument. 
+	// This is in contrast to the video container and codec which are passed to the server as is (after validation).
 	UI_FMT_JPEG				= "jpeg"
 	UI_FMT_PNG				= "png"
 	UI_FMT_JPEG_ALPHA_JPEG	= "jpeg;jpeg"
@@ -1435,6 +1437,21 @@ func SessionSendEvent(ctx *SessionContext, eventType string, code int, char rune
 	return
 }
 
+func isImageFormat(fmt string) (result bool, imgFormat string, alphaFormat string, err error) {
+	if _ALLOWED_UI_IMAGE_FMT[fmt] {
+		result = true
+		fmtParts := strings.Split(fmt, ";")
+		if len(fmtParts) != 2 {
+			return false, "", "", errors.New("Invalid format: " + fmt)
+		}
+		imgFormat = fmtParts[0]
+		if len(fmtParts) > 1 {
+			alphaFormat = fmtParts[1]
+		}
+	}
+	return result, imgFormat, alphaFormat, nil
+}
+
 // SessionGetUIURL is used to obtain the HTTP URL from which the browser UI can be streamed.
 // Note that one should also consider the cookies for that URL before making the HTTP request.
 func SessionGetUIURL(ctx *SessionContext, fmt string, tsDiscon bool, bitrate int) (uri string, err error) {
@@ -1447,12 +1464,12 @@ func SessionGetUIURL(ctx *SessionContext, fmt string, tsDiscon bool, bitrate int
 	// Construct the URL
 	uri = _SESSION_UI_URL
 
-	if _ALLOWED_UI_IMAGE_FMT[fmt] {
-		// Check if UI uses image stream in format with alpha image
-		fmtParts := strings.Split(fmt, ";")
-		if len(fmtParts) > 1 {
-			uri += "&alpha=" + fmtParts[1]
-		}
+	isImageStream, imgFormat, alphaFormat, err := isImageFormat(fmt)
+	if err != nil {
+		return "", err
+	}
+	if isImageStream && alphaFormat != "" {
+		uri += "&alpha=" + alphaFormat
 	}
 	
 	if bitrate > 0 {
@@ -1473,7 +1490,7 @@ func SessionGetUIURL(ctx *SessionContext, fmt string, tsDiscon bool, bitrate int
 	}, []string{
 		ctx.ServerProtocolHost,
 		url.QueryEscape(ctx.SessionId),
-		fmt,
+		imgFormat,
 		tsDisconStr,
 		strconv.Itoa(bitrate),
 	})
@@ -1536,27 +1553,22 @@ func writeFile (fname string, bytes []byte) error {
 	return err
 }
 
-// func concatBytes(slice, data []byte) []byte {
-//     l := len(slice)
-//     if l + len(data) > cap(slice) {  // reallocate
-//         // Allocate double what's needed, for future growth.
-//         newSlice := make([]byte, (l+len(data))*2)
-//         copy(newSlice, slice)
-//         slice = newSlice
-//     }
-//     slice = slice[0:l+len(data)]
-//     copy(slice[l:], data)
-//     return slice
-// }
-
-func concatBytes(data *[]byte, buf *[]byte) {
-	if data != nil && buf != nil && *buf != nil {
-		if *data == nil {
-			*data = *buf
-		} else {
-			*data = append(*data, *buf...)
+func concatBytes(slice, data []byte) []byte {
+	if data != nil && len(data) > 0 {
+		if slice == nil {
+			return data
 		}
+		l := len(slice)
+		if l + len(data) > cap(slice) {  // reallocate
+			// Allocate double what's needed, for future growth.
+			newSlice := make([]byte, (l+len(data))*2)
+			copy(newSlice, slice)
+			slice = newSlice
+		}
+		slice = slice[0:l+len(data)]
+		copy(slice[l:], data)
 	}
+    return slice
 }
 
 func wrapReadError(errFormat string, e error) (err error) {
@@ -1576,7 +1588,7 @@ func wrapReadError(errFormat string, e error) (err error) {
 
 func readImage(br *bufio.Reader, imgData *UIImage, ctx *SessionContext) (err error) {
 	
-	var data []byte
+	var data []byte // is used to gather image header json when receiving in chunks
 
 	for {
 		if imgData.Header == nil {
@@ -1585,7 +1597,7 @@ func readImage(br *bufio.Reader, imgData *UIImage, ctx *SessionContext) (err err
 				err = wrapReadError("failed to read image header: %v", e)
 				return 
 			}
-			concatBytes(&data, &portion)
+			data = concatBytes(data, portion)
 
 			// Check if data followed by the second \n
 			b, e := br.ReadByte()
@@ -1593,7 +1605,7 @@ func readImage(br *bufio.Reader, imgData *UIImage, ctx *SessionContext) (err err
 				continue
 			}
 			if b != '\n' {
-				concatBytes(&data, &[]byte{b})
+				data = concatBytes(data, []byte{b})
 				continue
 			}
 
@@ -1617,26 +1629,26 @@ func readImage(br *bufio.Reader, imgData *UIImage, ctx *SessionContext) (err err
 		_, err = io.ReadFull(br, imgBytes)
 		if err != nil {
 			if err == io.ErrUnexpectedEOF {
-				concatBytes(&imgData.Img, &imgBytes)
+				imgData.Img = concatBytes(imgData.Img, imgBytes)
 				continue
 			}
 			err = wrapReadError("unable to read image chunk: %v", err)
 			return 
 		}
-		concatBytes(&imgData.Img, &imgBytes)
+		imgData.Img = concatBytes(imgData.Img, imgBytes)
 
 		if imgData.Header.AlphaSize > 0 {
 			imgBytes := make([]byte, imgData.Header.AlphaSize - len(imgData.AlphaImg))
 			_, err = io.ReadFull(br, imgBytes)
 			if err != nil {
 				if err == io.ErrUnexpectedEOF {
-					concatBytes(&imgData.AlphaImg, &imgBytes)
+					imgData.AlphaImg = concatBytes(imgData.AlphaImg, imgBytes)
 					continue
 				}
 				err = wrapReadError("unable to read alpha chunk: %v", err)
 				return 
 			}
-			concatBytes(&imgData.AlphaImg, &imgBytes)
+			imgData.AlphaImg = concatBytes(imgData.AlphaImg, imgBytes)
 		}
 		return
 	}
@@ -1827,7 +1839,7 @@ func uiStreamRoutine(ctx *SessionContext, uri string, format string) {
 	ctx.isDone <- true
 }
 
-// SessionUIStreamStart is used to start streaming the UI, frames will be passed to OnUIVideoFrame() in the AppFlinger listener
+// SessionUIStreamStart is used to start streaming the UI, frames will be passed to one of OnUIVideoFrame() or OnUIImageFrame() in the AppFlinger listener
 func SessionUIStreamStart(ctx *SessionContext, format string, tsDiscon bool, bitrate int) (err error) {
 	uri, e := SessionGetUIURL(ctx, format, tsDiscon, bitrate)
 	if e != nil {

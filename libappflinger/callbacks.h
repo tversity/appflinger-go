@@ -39,8 +39,6 @@ typedef int set_rect_cb_t(const char *session_id, const char *instance_id, int x
 
 typedef struct appflinger_callbacks_struct
 {
-    on_ui_video_frame_cb_t *on_ui_video_frame_cb;
-    on_ui_image_frame_cb_t *on_ui_image_frame_cb;
     load_cb_t *load_cb;
     set_rect_cb_t *set_rect_cb;
     cancel_load_cb_t *cancel_load_cb;
@@ -53,6 +51,11 @@ typedef struct appflinger_callbacks_struct
     get_current_time_cb_t *get_current_time_cb;
     get_network_state_cb_t *get_network_state_cb;
     get_ready_state_cb_t *get_ready_state_cb;
+
+    // These callbacks are only relevant when using SessionUIStreamStart(), 
+    // they do not originate from the server but rather from the client SDK.
+    on_ui_video_frame_cb_t *on_ui_video_frame_cb;
+    on_ui_image_frame_cb_t *on_ui_image_frame_cb;
 } appflinger_callbacks_t;
 
 // Helper functions to invoke the above CBs from Go

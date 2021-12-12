@@ -390,11 +390,10 @@ func (self *AppflingerListener) OnPageClose(sessionId string) (err error) {
 }
 
 func (self *AppflingerListener) OnUIVideoFrame(sessionId string, isCodecConfig bool, isKeyFrame bool, idx int, pts int, dts int, data []byte) (err error) {
-	cSessionId := C.CString(sessionId)
 	if self.cb == nil || self.cb.on_ui_video_frame_cb == nil {
-		C.free(unsafe.Pointer(cSessionId))
 		return
 	}
+	cSessionId := C.CString(sessionId)
 	rc := C.invoke_on_ui_video_frame(self.cb.on_ui_video_frame_cb, cSessionId, CBool(isCodecConfig), CBool(isKeyFrame), C.int(idx), C.longlong(pts),
 		C.longlong(dts), C.CBytes(data), C.uint(len(data)))
 	if rc != 0 {
@@ -407,11 +406,10 @@ func (self *AppflingerListener) OnUIVideoFrame(sessionId string, isCodecConfig b
 }
 
 func (self *AppflingerListener) OnUIImageFrame(sessionId string, imgData *appflinger.UIImage) (err error) {
-	cSessionId := C.CString(sessionId)
 	if self.cb == nil || self.cb.on_ui_image_frame_cb == nil {
-		C.free(unsafe.Pointer(cSessionId))
 		return
 	}
+	cSessionId := C.CString(sessionId)
 	rc := C.invoke_on_ui_image_frame(self.cb.on_ui_image_frame_cb, cSessionId, C.int(imgData.Header.X), C.int(imgData.Header.Y), 
 		C.int(imgData.Header.Width), C.int(imgData.Header.Height), C.int(imgData.Header.Size - imgData.Header.AlphaSize), C.int(imgData.Header.AlphaSize), 
 		C.int(imgData.Header.IsFrame), C.CBytes(imgData.Img), C.CBytes(imgData.AlphaImg))
