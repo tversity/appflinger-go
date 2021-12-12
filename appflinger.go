@@ -29,6 +29,7 @@ import (
 	"io/ioutil"
 	"log"
 	"math"
+	"net"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
@@ -1558,23 +1559,30 @@ func concatBytes(data *[]byte, buf *[]byte) {
 	}
 }
 
+func wrapReadError(errFormat string, e error) (err error) {
+	if DEBUG_MODE {
+		fmt.Printf("--- wrapReadError: e = %+#v \n %v \n", e, e)
+	}
+	var opError *net.OpError
+	if errors.As(e, &opError) {
+		if opError.Op == "read" && strings.Contains(e.Error(), "closed network connection") {
+			err = ErrInterrupted
+			return
+		}
+	}
+	err = fmt.Errorf(errFormat, e)
+	return
+}
+
 func readImage(br *bufio.Reader, imgData *UIImage, ctx *SessionContext) (err error) {
 	
 	var data []byte
 
 	for {
-		// select {
-		// case <-ctx.shouldStopUI:
-		// 	fmt.Printf("--- readImage: shouldStopUI \n")
-		// 	err = ErrInterrupted
-		// 	return
-		// default:
-		// 	fmt.Printf("--- readImage: default \n")
-		// }
 		if imgData.Header == nil {
 			portion, e := br.ReadBytes('\n') // including the delimiter
 			if e != nil {
-				err = fmt.Errorf("failed to read image header: %v", e)
+				err = wrapReadError("failed to read image header: %v", e)
 				return 
 			}
 			concatBytes(&data, &portion)
@@ -1612,7 +1620,7 @@ func readImage(br *bufio.Reader, imgData *UIImage, ctx *SessionContext) (err err
 				concatBytes(&imgData.Img, &imgBytes)
 				continue
 			}
-			err = fmt.Errorf("unable to read image chunk: %v", err)
+			err = wrapReadError("unable to read image chunk: %v", err)
 			return 
 		}
 		concatBytes(&imgData.Img, &imgBytes)
@@ -1625,7 +1633,7 @@ func readImage(br *bufio.Reader, imgData *UIImage, ctx *SessionContext) (err err
 					concatBytes(&imgData.AlphaImg, &imgBytes)
 					continue
 				}
-				err = fmt.Errorf("unable to read alpha chunk: %v", err)
+				err = wrapReadError("unable to read alpha chunk: %v", err)
 				return 
 			}
 			concatBytes(&imgData.AlphaImg, &imgBytes)
@@ -1648,77 +1656,78 @@ func uiImageStream(ctx *SessionContext, uri string, format string) (err error) {
 		os.MkdirAll(TEST_IMGSTREAM_DIR, os.ModePerm)
 	}
 
-	errChan := make(chan error, 1)
-	br := bufio.NewReader(reader)
-
 	// Double buffer the images, we read a frame from the network while the previous frame read is being rendered
 	var images [2]*UIImage
 	readIndex := -1
 	writeIndex := 0
 
+	br := bufio.NewReader(reader)
+	errChan := make(chan error, 1)
+	stopped := false
+
 	for i := 0;; i++ {
 
-		go func() {
-			defer func() { errChan <- err } ()
+		// Prevent another read operation after ctx.shouldStopUI received true 
+		// and before the previous read is actually cancelled which allows to complete ui streaming 
+		if !stopped {
+			go func() {
+				defer func() { errChan <- err } ()
 
-			var imgData *UIImage
-			if images[writeIndex] != nil {
-				imgData = images[writeIndex]
-			} else {
-				imgData = &UIImage{}
-			}
-
-			err = readImage(br, imgData, ctx)
-			if err != nil {
-				err = fmt.Errorf("UI streaming failed to read image: %v", err)
-				return
-			}
-			images[writeIndex] = imgData
-
-			if DEBUG_MODE {
-				fmt.Printf("--- uiImageStream: imgData.Header = %+#v \n", imgData.Header)
-				// fmt.Printf("--- uiImageStream: imgData.Img = %+#v \n", imgData.Img)
-				fmtParts := strings.Split(format, ";")
-				if imgData.Header.AlphaSize == 0 && len(fmtParts) != 1 || imgData.Header.AlphaSize > 0 && len(fmtParts) != 2 {
-					err = fmt.Errorf("invalid UI image stream format: %v", format)
-					return 
+				var imgData *UIImage
+				if images[writeIndex] != nil {
+					imgData = images[writeIndex]
+				} else {
+					imgData = &UIImage{}
 				}
-				err = writeFile(TEST_IMGSTREAM_DIR + "/out" + strconv.Itoa(i) + "." + fmtParts[0], imgData.Img)
+
+				err = readImage(br, imgData, ctx)
 				if err != nil {
-					log.Println(err)
+					return
 				}
-				if imgData.Header.AlphaSize > 0 {
-					err = writeFile(TEST_IMGSTREAM_DIR + "/out" + strconv.Itoa(i) + "alpha." + fmtParts[1], imgData.AlphaImg)
+				images[writeIndex] = imgData
+
+				if DEBUG_MODE {
+					fmt.Printf("--- uiImageStream: imgData.Header = %+#v \n", imgData.Header)
+					// fmt.Printf("--- uiImageStream: imgData.Img = %+#v \n", imgData.Img)
+					fmtParts := strings.Split(format, ";")
+					if imgData.Header.AlphaSize == 0 && len(fmtParts) != 1 || imgData.Header.AlphaSize > 0 && len(fmtParts) != 2 {
+						err = fmt.Errorf("invalid UI image stream format: %v", format)
+						return 
+					}
+					err = writeFile(TEST_IMGSTREAM_DIR + "/out" + strconv.Itoa(i) + "." + fmtParts[0], imgData.Img)
 					if err != nil {
 						log.Println(err)
 					}
+					if imgData.Header.AlphaSize > 0 {
+						err = writeFile(TEST_IMGSTREAM_DIR + "/out" + strconv.Itoa(i) + "alpha." + fmtParts[1], imgData.AlphaImg)
+						if err != nil {
+							log.Println(err)
+						}
+					}
 				}
-			}
-			// select {
-			// case <-ctx.shouldStopUI:
-			// 	err = ErrInterrupted
-			// 	fmt.Printf("--- uiImageStream: shouldStopUI \n")
-			// default:
-			// 	fmt.Printf("--- uiImageStream: done \n")
-			// }
-		}()
+			}()
 
-		if readIndex >= 0 {
-			err = ctx.appflingerListener.OnUIImageFrame(ctx.SessionId, images[readIndex])
-			if err != nil {
-				err = fmt.Errorf("UI frame listener failed: %v", err)
-				return
+			if readIndex >= 0 {
+				if images[readIndex] == nil {
+					// should never happen
+					err = fmt.Errorf("UI frame listener failed: image is not obtained")
+					return
+				}
+				err = ctx.appflingerListener.OnUIImageFrame(ctx.SessionId, images[readIndex])
+				if err != nil {
+					err = fmt.Errorf("UI frame listener failed: %v", err)
+					return
+				}
+				images[readIndex].Header = nil
+				images[readIndex].Img = nil
+				images[readIndex].AlphaImg = nil
 			}
-			images[readIndex].Header = nil
-			images[readIndex].Img = nil
-			images[readIndex].AlphaImg = nil
 		}
 
 		select {
 		case <-ctx.shouldStopUI:
 			reader.Close()
-			// err = ErrInterrupted
-			// return
+			stopped = true
 		case err = <-errChan:
 			if err != nil {
 				return
@@ -1759,37 +1768,38 @@ func uiVideoStream(ctx *SessionContext, uri string) (err error) {
 	var pkts [2]av.Packet
 	readIndex := -1
 	writeIndex := 0
-	errChan := make(chan error, 1)
-	for {
-		go func() {
-			pkts[writeIndex], err = demuxer.ReadPacket()
-			if err != nil {
-				err = fmt.Errorf("UI streaming failed to demux packet: %v", err)
-			}
-			// select {
-			// case <-ctx.shouldStopUI:
-			// 	err = ErrInterrupted
-			// default:
-			// }
-			errChan <- err
-		}()
 
-		if readIndex >= 0 {
-			var data []byte
-			pkt := &pkts[readIndex]
-			data = pktToBitstream(videoCodecData, pkt)
-			err = ctx.appflingerListener.OnUIVideoFrame(ctx.SessionId, pkt.IsKeyFrame, pkt.IsKeyFrame, int(pkt.Idx), int(pkt.CompositionTime), int(pkt.Time), data)
-			if err != nil {
-				err = fmt.Errorf("UI frame listener failed: %v", err)
-				return
+	errChan := make(chan error, 1)
+	stopped := false
+
+	for {
+		// Prevent another read operation after ctx.shouldStopUI received true 
+		// and before the previous read is actually cancelled which allows to complete ui streaming 
+		if !stopped {
+			go func() {
+				pkts[writeIndex], err = demuxer.ReadPacket()
+				if err != nil {
+					err = wrapReadError("UI streaming failed to demux packet: %v", err)
+				}
+				errChan <- err
+			}()
+
+			if readIndex >= 0 {
+				var data []byte
+				pkt := &pkts[readIndex]
+				data = pktToBitstream(videoCodecData, pkt)
+				err = ctx.appflingerListener.OnUIVideoFrame(ctx.SessionId, pkt.IsKeyFrame, pkt.IsKeyFrame, int(pkt.Idx), int(pkt.CompositionTime), int(pkt.Time), data)
+				if err != nil {
+					err = fmt.Errorf("UI frame listener failed: %v", err)
+					return
+				}
 			}
 		}
-
 		// Wait for reading from the http request to complete
 		select {
 		case <-ctx.shouldStopUI:
-			err = ErrInterrupted
-			return
+			reader.Close()
+			stopped = true
 		case err = <-errChan:
 			if err != nil {
 				return
@@ -1799,8 +1809,6 @@ func uiVideoStream(ctx *SessionContext, uri string) (err error) {
 		readIndex = writeIndex
 		writeIndex = 1 - writeIndex
 	}
-
-	return nil
 }
 
 func uiStreamRoutine(ctx *SessionContext, uri string, format string) {

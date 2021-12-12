@@ -40,8 +40,8 @@ func init() {
 	flag.StringVar(&serverPort, "port", "8080", "The server port")
 	flag.StringVar(&serverIP, "ip", "localhost", "The server IP")
 	flag.StringVar(&browserURL, "url", 
-		"https://www.youtube.com/tv?env_mediaSourceDevelopment=1", 
-		// "https://www.w3.org/2010/05/video/mediaevents.html",
+		// "https://www.youtube.com/tv?env_mediaSourceDevelopment=1", 
+		"https://www.w3.org/2010/05/video/mediaevents.html",
 		"The web address of the page to be loaded")
 }
 
