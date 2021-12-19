@@ -360,3 +360,8 @@ func (self *AppflingerListenerStub) OnUIVideoFrame(sessionId string, isCodecConf
 	err = nil
 	return
 }
+
+func (self *AppflingerListenerStub) OnUIImageFrame(sessionId string, imgData *appflinger.UIImage) (err error) {
+	err = nil
+	return
+}
