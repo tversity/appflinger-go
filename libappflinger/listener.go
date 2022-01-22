@@ -34,6 +34,34 @@ func NewAppflingerListener(cb *C.appflinger_callbacks_t) (self *AppflingerListen
 	return
 }
 
+func getCPointer(memSize int) unsafe.Pointer {
+	return C.malloc(C.size_t(memSize))
+}
+
+type cDataToFloatSliceConverter interface {
+	// When implementing the interface in both functions (getCPointerToDoubleArray, convertCPointerToFloatSlice) 
+	// we must use the same constant for memory size to be allocated and used in conversion.
+	// Conversion should use data copying to the Go slice. 
+	// Freeing unsafe.Pointer returned by getCPointerToDoubleArray is a caller code responsibility.
+	getCPointerToDoubleArray() unsafe.Pointer
+	convertCPointerToFloatSlice(cPointer unsafe.Pointer, len int) (result []float64)
+}
+
+// GoBufferedResult implements cDataToFloatSliceConverter interface 
+// to serve conversion of appflinger.GetBufferedResult fields
+type GoBufferedResult struct{}
+
+func (r GoBufferedResult) getCPointerToDoubleArray() unsafe.Pointer {
+	return getCPointer(C.MSE_BUFFERED_LENGTH * C.sizeof_double)
+}
+
+func (r GoBufferedResult) convertCPointerToFloatSlice(cPointer unsafe.Pointer, len int) (result []float64) {
+	v := (*[C.MSE_BUFFERED_LENGTH]float64)(cPointer)	
+	result = make([]float64, len)
+	copy(result, (*v)[0:len])
+	return
+}
+
 // Implementation of appflinger.AppFlinger interface that just delegates to C Callbacks
 
 func (self *AppflingerListener) Load(sessionId string, instanceId string, url string) (err error) {
@@ -329,9 +357,9 @@ func (self *AppflingerListener) AppendBuffer(sessionId string, instanceId string
 	cBufferId := C.CString(bufferId)
 	cPayload := C.CBytes(payload)
 
-	const videoBufferSize = C.MSE_VIDEO_BUFFER_SIZE
-	cBufferedStart := C.malloc(C.size_t(videoBufferSize * unsafe.Sizeof(C.double(0))))
-	cBufferedEnd := C.malloc(C.size_t(videoBufferSize * unsafe.Sizeof(C.double(0))))
+	var r GoBufferedResult
+	cBufferedStart := r.getCPointerToDoubleArray()
+	cBufferedEnd := r.getCPointerToDoubleArray()
 	var cBufferedLength C.int;
 	
 	rc := C.invoke_append_buffer(self.cb.append_buffer_cb, cSessionId, cInstanceId, cSourceId, C.double(appendWindowStart), C.double(appendWindowEnd),
@@ -340,15 +368,10 @@ func (self *AppflingerListener) AppendBuffer(sessionId string, instanceId string
 		err = fmt.Errorf("Failed to append buffer")
 	} else {
 		err = nil
-	}	
+	}
 
-	bufferedStart := (*[videoBufferSize]float64)(cBufferedStart)
-	result.Start = make([]float64, cBufferedLength)
-	copy(result.Start, bufferedStart[0:cBufferedLength])
-
-	bufferedEnd := (*[videoBufferSize]float64)(cBufferedEnd)
-	result.End = make([]float64, cBufferedLength)
-	copy(result.End, bufferedEnd[0:cBufferedLength])
+	result.Start = r.convertCPointerToFloatSlice(cBufferedStart, int(cBufferedLength))
+	result.End = r.convertCPointerToFloatSlice(cBufferedEnd, int(cBufferedLength))
 	
 	C.free(unsafe.Pointer(cSessionId))
 	C.free(unsafe.Pointer(cInstanceId))

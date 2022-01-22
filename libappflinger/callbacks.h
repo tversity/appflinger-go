@@ -6,7 +6,7 @@
 extern "C" {
 #endif
 
-#define MSE_VIDEO_BUFFER_SIZE 10
+#define MSE_BUFFERED_LENGTH 10
 
 typedef int on_ui_frame_cb_t(const char *session_id, int is_codec_config, int is_key_frame, int idx, long long pts, long long dts,
     void *data, unsigned data_len);
