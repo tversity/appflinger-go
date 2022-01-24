@@ -1694,6 +1694,8 @@ func uiImageStream(ctx *SessionContext, uri string, format string) (err error) {
 		case <-ctx.shouldStopUI:
 			reader.Close()
 			select {
+			// After closing the reader we wait for the go routine to terminate 
+			// since it relies on the context, which is released when we return.
 			case err = <-errChan:
 				if err != nil {
 					err = ErrInterrupted
@@ -1769,6 +1771,8 @@ func uiVideoStream(ctx *SessionContext, uri string) (err error) {
 		case <-ctx.shouldStopUI:
 			reader.Close()
 			select {
+			// After closing the reader we wait for the go routine to terminate 
+			// since we do not want to return before it terminated.
 			case err = <-errChan:
 				if err != nil {
 					err = ErrInterrupted
