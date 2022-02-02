@@ -86,6 +86,7 @@ const (
 	// Video stream format contains two parts separated by semicolon, representing container followed by codec.
 	UI_FMT_TS_H264  = "mp2t;h264"
 	UI_FMT_MP4_H264 = "mp4;h264"
+	UI_FMT_MP4_AV1  = "mp4;av1"
 	UI_FMT_WEBM_VP8 = "webm;vp8"
 	UI_FMT_WEBM_VP9 = "webm;vp9"
 	UI_FMT_MPD_TS   = "mpd;mp2"
@@ -125,6 +126,7 @@ const (
 var _ALLOWED_UI_VIDEO_FMT = map[string]bool{
 	UI_FMT_TS_H264:  true,
 	UI_FMT_MP4_H264: true,
+	UI_FMT_MP4_AV1:  true,
 	UI_FMT_WEBM_VP8: true,
 	UI_FMT_WEBM_VP9: true,
 	UI_FMT_MPD_TS:   true,
@@ -1396,7 +1398,7 @@ func SessionGetSessionContext(sessionId string) (ctx *SessionContext, err error)
 }
 
 // SessionSendEvent is used to inject input into a session.
-func SessionSendEvent(ctx *SessionContext, eventType string, code int, char rune, x int, y int) (err error) {
+func SessionSendEvent(ctx *SessionContext, eventType string, code int, char rune, mod int, x int, y int) (err error) {
 	// Construct the URL
 	uri := _SESSION_EVENT_URL
 	eventType = strings.ToLower(eventType)
@@ -1413,7 +1415,9 @@ func SessionSendEvent(ctx *SessionContext, eventType string, code int, char rune
 		uri += "&char=${CHAR}"
 	}
 
-	codeString := strconv.Itoa(code)
+	if mod > 0 {
+		uri += "&mod=${MOD}"
+	}
 
 	uri = replaceVars(uri, []string{
 		"${PROTHOST}",
@@ -1421,14 +1425,16 @@ func SessionSendEvent(ctx *SessionContext, eventType string, code int, char rune
 		"${TYPE}",
 		"${KEYCODE}",
 		"${CHAR}",
+		"${MOD}",
 		"${X}",
 		"${Y}",
 	}, []string{
 		ctx.ServerProtocolHost,
 		url.QueryEscape(ctx.SessionId),
 		eventType,
-		codeString,
-		codeString,
+		strconv.Itoa(code),
+		strconv.Itoa(int(char)),
+		strconv.Itoa(mod),
 		strconv.Itoa(x),
 		strconv.Itoa(y),
 	})
