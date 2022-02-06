@@ -1,9 +1,15 @@
 #include "callbacks.h"
 
-int invoke_on_ui_frame(on_ui_frame_cb_t *cb, const char *session_id, int is_codec_config, int is_key_frame, int idx, long long pts,
+int invoke_on_ui_video_frame(on_ui_video_frame_cb_t *cb, const char *session_id, int is_codec_config, int is_key_frame, int idx, long long pts,
     long long dts, void *data, unsigned data_len)
 {
     return cb(session_id, is_codec_config, is_key_frame, idx, pts, dts, data, data_len);
+}
+
+int invoke_on_ui_image_frame(on_ui_image_frame_cb_t *cb, const char *session_id, int x, int y, int width, int height, int is_frame, 
+    void *img_data, unsigned img_size, void *alpha_data, unsigned alpha_size)
+{
+    return cb(session_id, x, y, width, height, is_frame, img_data, img_size, alpha_data, alpha_size);
 }
 
 int invoke_load(load_cb_t *cb, const char *session_id, const char *instance_id, const char *url)

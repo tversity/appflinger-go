@@ -356,7 +356,12 @@ func (self *AppflingerListenerStub) OnPageClose(sessionId string) (err error) {
 	return
 }
 
-func (self *AppflingerListenerStub) OnUIFrame(sessionId string, isCodecConfig bool, isKeyFrame bool, idx int, pts int, dts int, data []byte) (err error) {
+func (self *AppflingerListenerStub) OnUIVideoFrame(sessionId string, isCodecConfig bool, isKeyFrame bool, idx int, pts int, dts int, data []byte) (err error) {
+	err = nil
+	return
+}
+
+func (self *AppflingerListenerStub) OnUIImageFrame(sessionId string, imgData *appflinger.UIImage) (err error) {
 	err = nil
 	return
 }

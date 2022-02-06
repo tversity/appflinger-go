@@ -7,8 +7,11 @@ extern "C" {
 #endif
 
 
-typedef int on_ui_frame_cb_t(const char *session_id, int is_codec_config, int is_key_frame, int idx, long long pts, long long dts,
+typedef int on_ui_video_frame_cb_t(const char *session_id, int is_codec_config, int is_key_frame, int idx, long long pts, long long dts,
     void *data, unsigned data_len);
+
+typedef int on_ui_image_frame_cb_t(const char *session_id, int x, int y, int width, int height, int is_frame, 
+    void *img_data, unsigned img_size, void *alpha_data, unsigned alpha_size);
 
 typedef int load_cb_t(const char *session_id, const char *instance_id, const char *url);
 
@@ -36,7 +39,6 @@ typedef int set_rect_cb_t(const char *session_id, const char *instance_id, int x
 
 typedef struct appflinger_callbacks_struct
 {
-    on_ui_frame_cb_t *on_ui_frame_cb;
     load_cb_t *load_cb;
     set_rect_cb_t *set_rect_cb;
     cancel_load_cb_t *cancel_load_cb;
@@ -49,11 +51,19 @@ typedef struct appflinger_callbacks_struct
     get_current_time_cb_t *get_current_time_cb;
     get_network_state_cb_t *get_network_state_cb;
     get_ready_state_cb_t *get_ready_state_cb;
+
+    // These callbacks are only relevant when using SessionUIStreamStart(), 
+    // they do not originate from the server but rather from the client SDK.
+    on_ui_video_frame_cb_t *on_ui_video_frame_cb;
+    on_ui_image_frame_cb_t *on_ui_image_frame_cb;
 } appflinger_callbacks_t;
 
 // Helper functions to invoke the above CBs from Go
-int invoke_on_ui_frame(on_ui_frame_cb_t *cb, const char *session_id, int is_codec_config, int is_key_frame, int idx, long long pts,
+int invoke_on_ui_video_frame(on_ui_video_frame_cb_t *cb, const char *session_id, int is_codec_config, int is_key_frame, int idx, long long pts,
     long long dts, void *data, unsigned data_len);
+
+int invoke_on_ui_image_frame(on_ui_image_frame_cb_t *cb, const char *session_id, int x, int y, int width, int height, int is_frame, 
+    void *img_data, unsigned img_size, void *alpha_data, unsigned alpha_size);
 
 int invoke_load(load_cb_t *cb, const char *session_id, const char *instance_id, const char *url);
 

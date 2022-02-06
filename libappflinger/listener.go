@@ -24,7 +24,7 @@ const ()
 type AppflingerListener struct {
 	// C callback pointers
 	// Note - we cannot invoke C function pointers from Go so we use a helper C function to do it
-	// e.g. to invoke the on_ui_frame_cb function pointer we use C.invoke_on_ui_frame()
+	// e.g. to invoke the on_ui_video_frame_cb function pointer we use C.invoke_on_ui_video_frame()
 	cb *C.appflinger_callbacks_t
 }
 
@@ -389,15 +389,41 @@ func (self *AppflingerListener) OnPageClose(sessionId string) (err error) {
 	return
 }
 
-func (self *AppflingerListener) OnUIFrame(sessionId string, isCodecConfig bool, isKeyFrame bool, idx int, pts int, dts int, data []byte) (err error) {
+func (self *AppflingerListener) OnUIVideoFrame(sessionId string, isCodecConfig bool, isKeyFrame bool, idx int, pts int, dts int, data []byte) (err error) {
+	if self.cb == nil || self.cb.on_ui_video_frame_cb == nil {
+		return
+	}
 	cSessionId := C.CString(sessionId)
-	rc := C.invoke_on_ui_frame(self.cb.on_ui_frame_cb, cSessionId, CBool(isCodecConfig), CBool(isKeyFrame), C.int(idx), C.longlong(pts),
-		C.longlong(dts), C.CBytes(data), C.uint(len(data)))
+	cData := C.CBytes(data)
+	rc := C.invoke_on_ui_video_frame(self.cb.on_ui_video_frame_cb, cSessionId, CBool(isCodecConfig), CBool(isKeyFrame), C.int(idx), C.longlong(pts),
+		C.longlong(dts), cData, C.uint(len(data)))
 	if rc != 0 {
 		err = fmt.Errorf("Failed to process frame")
 	} else {
 		err = nil
 	}
 	C.free(unsafe.Pointer(cSessionId))
+	C.free(unsafe.Pointer(cData))
+	return
+}
+
+func (self *AppflingerListener) OnUIImageFrame(sessionId string, imgData *appflinger.UIImage) (err error) {
+	if self.cb == nil || self.cb.on_ui_image_frame_cb == nil {
+		return
+	}
+	cSessionId := C.CString(sessionId)
+	cImg := C.CBytes(imgData.Img)
+	cAlphaImg := C.CBytes(imgData.AlphaImg)
+	rc := C.invoke_on_ui_image_frame(self.cb.on_ui_image_frame_cb, cSessionId, C.int(imgData.Header.X), C.int(imgData.Header.Y), 
+		C.int(imgData.Header.Width), C.int(imgData.Header.Height), C.int(imgData.Header.IsFrame), 
+		cImg, C.uint(imgData.Header.Size - imgData.Header.AlphaSize), cAlphaImg, C.uint(imgData.Header.AlphaSize))
+	if rc != 0 {
+		err = fmt.Errorf("Failed to process image frame")
+	} else {
+		err = nil
+	}
+	C.free(unsafe.Pointer(cSessionId))
+	C.free(unsafe.Pointer(cImg))
+	C.free(unsafe.Pointer(cAlphaImg))
 	return
 }
