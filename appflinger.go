@@ -44,6 +44,7 @@ import (
 
 const (
 	DEBUG_MODE = true
+	
 	// When DEBUG_MODE set to true and the UI stream requested with one of image formats, 
 	// UI images are being saved as files in the folder specified in TEST_IMGSTREAM_DIR. 
 	// The folder is being created (or re-created) under the current execution path when client starts.    
@@ -1482,7 +1483,7 @@ func SessionGetUIURL(ctx *SessionContext, format string, tsDiscon bool, bitrate 
 	if isImageStream {
 		format = imgFormat
 		if alphaFormat != "" {
-			uri += "&alpha=" + alphaFormat
+			uri += "&alpha=${ALPHAFMT}"
 		}
 	}
 	
@@ -1499,12 +1500,14 @@ func SessionGetUIURL(ctx *SessionContext, format string, tsDiscon bool, bitrate 
 		"${PROTHOST}",
 		"${SID}",
 		"${FMT}",
+		"${ALPHAFMT}",
 		"${TSDISCON}",
 		"${BITRATE}",
 	}, []string{
 		ctx.ServerProtocolHost,
 		url.QueryEscape(ctx.SessionId),
 		format,
+		alphaFormat,
 		tsDisconStr,
 		strconv.Itoa(bitrate),
 	})
@@ -1599,7 +1602,7 @@ func readImage(br *bufio.Reader, imgData *UIImage, ctx *SessionContext) (err err
 		imgData.Header = &jsonHeader
 		data = nil
 
-		imgBytes := make([]byte, imgData.Header.Size - imgData.Header.AlphaSize - len(imgData.Img))
+		imgBytes := make([]byte, imgData.Header.Size - imgData.Header.AlphaSize)
 		_, err = io.ReadFull(br, imgBytes)
 		if err != nil {
 			err = fmt.Errorf("unable to read image data: %w", err)
@@ -1608,7 +1611,7 @@ func readImage(br *bufio.Reader, imgData *UIImage, ctx *SessionContext) (err err
 		imgData.Img = imgBytes
 
 		if imgData.Header.AlphaSize > 0 {
-			imgBytes := make([]byte, imgData.Header.AlphaSize - len(imgData.AlphaImg))
+			imgBytes := make([]byte, imgData.Header.AlphaSize)
 			_, err = io.ReadFull(br, imgBytes)
 			if err != nil {
 				err = fmt.Errorf("unable to read alpha image data: %w", err)
@@ -1681,11 +1684,6 @@ func uiImageStream(ctx *SessionContext, uri string, format string) (err error) {
 		}()
 
 		if readIndex >= 0 {
-			if images[readIndex] == nil {
-				// should never happen
-				err = fmt.Errorf("UI frame listener failed: image is not obtained")
-				return
-			}
 			err = ctx.appflingerListener.OnUIImageFrame(ctx.SessionId, images[readIndex])
 			if err != nil {
 				err = fmt.Errorf("UI frame listener failed: %w", err)

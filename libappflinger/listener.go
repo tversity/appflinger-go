@@ -415,8 +415,8 @@ func (self *AppflingerListener) OnUIImageFrame(sessionId string, imgData *appfli
 	cImg := C.CBytes(imgData.Img)
 	cAlphaImg := C.CBytes(imgData.AlphaImg)
 	rc := C.invoke_on_ui_image_frame(self.cb.on_ui_image_frame_cb, cSessionId, C.int(imgData.Header.X), C.int(imgData.Header.Y), 
-		C.int(imgData.Header.Width), C.int(imgData.Header.Height), C.int(imgData.Header.Size - imgData.Header.AlphaSize), C.int(imgData.Header.AlphaSize), 
-		C.int(imgData.Header.IsFrame), cImg, cAlphaImg)
+		C.int(imgData.Header.Width), C.int(imgData.Header.Height), C.int(imgData.Header.IsFrame), 
+		cImg, C.uint(imgData.Header.Size - imgData.Header.AlphaSize), cAlphaImg, C.uint(imgData.Header.AlphaSize))
 	if rc != 0 {
 		err = fmt.Errorf("Failed to process image frame")
 	} else {

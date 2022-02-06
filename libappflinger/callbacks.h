@@ -10,8 +10,8 @@ extern "C" {
 typedef int on_ui_video_frame_cb_t(const char *session_id, int is_codec_config, int is_key_frame, int idx, long long pts, long long dts,
     void *data, unsigned data_len);
 
-typedef int on_ui_image_frame_cb_t(const char *session_id, int x, int y, int width, int height, int img_size, int alpha_size, 
-    int is_frame, void *img_data, void *alpha_data);
+typedef int on_ui_image_frame_cb_t(const char *session_id, int x, int y, int width, int height, int is_frame, 
+    void *img_data, unsigned img_size, void *alpha_data, unsigned alpha_size);
 
 typedef int load_cb_t(const char *session_id, const char *instance_id, const char *url);
 
@@ -62,8 +62,8 @@ typedef struct appflinger_callbacks_struct
 int invoke_on_ui_video_frame(on_ui_video_frame_cb_t *cb, const char *session_id, int is_codec_config, int is_key_frame, int idx, long long pts,
     long long dts, void *data, unsigned data_len);
 
-int invoke_on_ui_image_frame(on_ui_image_frame_cb_t *cb, const char *session_id, int x, int y, int width, int height, int img_size, int alpha_size, int is_frame, 
-    void *img_data, void *alpha_data);
+int invoke_on_ui_image_frame(on_ui_image_frame_cb_t *cb, const char *session_id, int x, int y, int width, int height, int is_frame, 
+    void *img_data, unsigned img_size, void *alpha_data, unsigned alpha_size);
 
 int invoke_load(load_cb_t *cb, const char *session_id, const char *instance_id, const char *url);
 
