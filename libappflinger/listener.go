@@ -34,31 +34,20 @@ func NewAppflingerListener(cb *C.appflinger_callbacks_t) (self *AppflingerListen
 	return
 }
 
-func getCPointer(memSize int) unsafe.Pointer {
+func cMalloc(memSize uint) unsafe.Pointer {
 	return C.malloc(C.size_t(memSize))
 }
 
-type cDataToFloatSliceConverter interface {
-	// When implementing the interface in both functions (getCPointerToDoubleArray, convertCPointerToFloatSlice) 
-	// we must use the same constant for memory size to be allocated and used in conversion.
-	// Conversion should use data copying to the Go slice. 
-	// Freeing unsafe.Pointer returned by getCPointerToDoubleArray is a caller code responsibility.
-	getCPointerToDoubleArray() unsafe.Pointer
-	convertCPointerToFloatSlice(cPointer unsafe.Pointer, len int) (result []float64)
+func cDoubleArray(len uint) unsafe.Pointer {
+	return cMalloc(len * C.sizeof_double)
 }
 
-// GoBufferedResult implements cDataToFloatSliceConverter interface 
-// to serve conversion of appflinger.GetBufferedResult fields
-type GoBufferedResult struct{}
-
-func (r GoBufferedResult) getCPointerToDoubleArray() unsafe.Pointer {
-	return getCPointer(C.MSE_BUFFERED_LENGTH * C.sizeof_double)
-}
-
-func (r GoBufferedResult) convertCPointerToFloatSlice(cPointer unsafe.Pointer, len int) (result []float64) {
-	v := (*[C.MSE_BUFFERED_LENGTH]float64)(cPointer)	
-	result = make([]float64, len)
-	copy(result, (*v)[0:len])
+func goFloat64Array(cPointer unsafe.Pointer, len uint) (result []float64) {
+	// The way C represents double float and they way Go represents float64 are the same (IEEE-754 64-bit), 
+	// so we can create float64 slice and copy data from C memory to Go memory.
+	v := (*[1 << 30]float64)(cPointer)[:len:len]
+	result = make([]float64, len, len)
+	copy(result, v)
 	return
 }
 
@@ -245,7 +234,7 @@ func (self *AppflingerListener) GetSeekable(sessionId string, instanceId string,
 	return
 }
 
-func (self *AppflingerListener) GetBuffered(sessionId string, instanceId string, result *appflinger.GetBufferedResult) (err error) {
+func (self *AppflingerListener) GetBuffered(sessionId string, instanceId string, sourceId string, result *appflinger.GetBufferedResult) (err error) {
 	var duration float64
 	duration, err = self.GetDuration(sessionId, instanceId)
 	if err != nil {
@@ -356,30 +345,29 @@ func (self *AppflingerListener) AppendBuffer(sessionId string, instanceId string
 	cSourceId := C.CString(sourceId)
 	cBufferId := C.CString(bufferId)
 	cPayload := C.CBytes(payload)
-
-	var r GoBufferedResult
-	cBufferedStart := r.getCPointerToDoubleArray()
-	cBufferedEnd := r.getCPointerToDoubleArray()
-	var cBufferedLength C.int;
 	
+	cBufferedStart := cDoubleArray(appflinger.MSE_BUFFERED_LENGTH)
+	cBufferedEnd := cDoubleArray(appflinger.MSE_BUFFERED_LENGTH)
+	var cBufferedLength C.uint = appflinger.MSE_BUFFERED_LENGTH
+
 	rc := C.invoke_append_buffer(self.cb.append_buffer_cb, cSessionId, cInstanceId, cSourceId, C.double(appendWindowStart), C.double(appendWindowEnd),
-		cBufferId, C.int(bufferOffset), C.int(bufferLength), cPayload, C.uint(len(payload)), cBufferedStart, cBufferedEnd, &cBufferedLength);
+		cBufferId, C.int(bufferOffset), C.int(bufferLength), cPayload, C.uint(len(payload)), (*C.double)(cBufferedStart), (*C.double)(cBufferedEnd), &cBufferedLength);
 	if rc != 0 {
 		err = fmt.Errorf("Failed to append buffer")
 	} else {
 		err = nil
 	}
 
-	result.Start = r.convertCPointerToFloatSlice(cBufferedStart, int(cBufferedLength))
-	result.End = r.convertCPointerToFloatSlice(cBufferedEnd, int(cBufferedLength))
+	result.Start = goFloat64Array(cBufferedStart, uint(cBufferedLength))
+	result.End = goFloat64Array(cBufferedEnd, uint(cBufferedLength))
 	
 	C.free(unsafe.Pointer(cSessionId))
 	C.free(unsafe.Pointer(cInstanceId))
 	C.free(unsafe.Pointer(cSourceId))
 	C.free(unsafe.Pointer(cBufferId))
 	C.free(unsafe.Pointer(cPayload))
-	C.free(unsafe.Pointer(cBufferedStart))
-	C.free(unsafe.Pointer(cBufferedEnd))
+	C.free(cBufferedStart)
+	C.free(cBufferedEnd)
 	return
 }
 
