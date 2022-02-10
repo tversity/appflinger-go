@@ -61,7 +61,53 @@ int invoke_get_ready_state(get_ready_state_cb_t *cb, const char *session_id, con
     return cb(session_id, instance_id, ready_state);
 }
 
+int invoke_get_buffered(get_buffered_cb_t *cb, const char *session_id, const char *instance_id, const char *source_id)
+{
+    return cb(session_id, instance_id, source_id);
+}
+
 int invoke_set_rect(set_rect_cb_t *cb, const char *session_id, const char *instance_id, int x, int y, int width , int height)
 {
     return cb(session_id, instance_id, x, y, width, height);
+}
+
+int invoke_add_source_buffer(add_source_buffer_cb_t *cb, const char *session_id, const char *instance_id, const char *source_id, const char *mime_type)
+{
+    return cb(session_id, instance_id, source_id, mime_type);
+}
+
+int invoke_remove_source_buffer(remove_source_buffer_cb_t *cb, const char *session_id, const char *instance_id, const char *source_id)
+{
+    return cb(session_id, instance_id, source_id);
+}
+
+int invoke_abort_source_buffer(abort_source_buffer_cb_t *cb, const char *session_id, const char *instance_id, const char *source_id)
+{
+    return cb(session_id, instance_id, source_id);
+}
+
+int invoke_append_buffer(append_buffer_cb_t *cb, const char *session_id, const char *instance_id, const char *source_id, double append_window_start, double append_window_end,
+    const char *buffer_id, int buffer_offset, int buffer_length, void *payload, unsigned payload_length, double *buffered_start, double *buffered_end, unsigned *buffered_length)
+{
+    return cb(session_id, instance_id, source_id, append_window_start, append_window_end, buffer_id, buffer_offset, buffer_length, payload, payload_length, buffered_start, buffered_end, buffered_length);
+}
+
+int invoke_set_append_mode(set_append_mode_cb_t *cb, const char *session_id, const char *instance_id, const char *source_id, int mode)
+{
+    return cb(session_id, instance_id, source_id, mode);
+}
+
+int invoke_set_append_timestamp_offset(set_append_timestamp_offset_cb_t *cb, const char *session_id, const char *instance_id, const char *source_id, double timestamp_offset)
+{
+    return cb(session_id, instance_id, source_id, timestamp_offset);
+}
+
+int invoke_remove_buffer_range(remove_buffer_range_cb_t *cb, const char *session_id, const char *instance_id, const char *source_id, double start, double end)
+{
+    return cb(session_id, instance_id, source_id, start, end);
+}
+
+int invoke_change_source_buffer_type(change_source_buffer_type_cb_t *cb, const char *session_id, const char *instance_id, const char *source_id, const char *mime_type)
+{
+    return cb(session_id, instance_id, source_id, mime_type);
 }

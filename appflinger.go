@@ -86,6 +86,9 @@ const (
 	UI_FMT_JPEG     = "jpeg"
 	UI_FMT_PNG      = "png"
 
+	// MSE buffered video segments amount, used as times array length for type GetBufferedResult  
+	MSE_BUFFERED_LENGTH = 10
+
 	// MSE AppendMode enum
 	MSE_APPEND_MODE_SEGMENTS = 0
 	MSE_APPEND_MODE_SEQUENCE = 1
@@ -306,7 +309,7 @@ type AppflingerListener interface {
 	GetNetworkState(sessionId string, instanceId string) (networkState int, err error)
 	GetReadyState(sessionId string, instanceId string) (readyState int, err error)
 	GetSeekable(sessionId string, instanceId string, result *GetSeekableResult) (err error)
-	GetBuffered(sessionId string, instanceId string, result *GetBufferedResult) (err error)
+	GetBuffered(sessionId string, instanceId string, sourceId string, result *GetBufferedResult) (err error)
 	SetRect(sessionId string, instanceId string, x int, y int, width int, height int) (err error)
 	SetVisible(sessionId string, instanceId string, visible bool) (err error)
 	SetRate(sessionId string, instanceId string, rate float64) (err error)
@@ -544,7 +547,7 @@ func processRPCRequest(req *controlChannelRequest, payload []byte, appf Appfling
 		// we are dealing with two arrays and not two scalars.
 		var getBufferedResult GetBufferedResult
 		if appf != nil {
-			err = appf.GetBuffered(req.SessionId, req.InstanceId, &getBufferedResult)
+			err = appf.GetBuffered(req.SessionId, req.InstanceId, req.SourceId, &getBufferedResult)
 		}
 		if err == nil {
 			if getBufferedResult.Start != nil && getBufferedResult.End != nil {
@@ -906,6 +909,9 @@ func processRPCRequest(req *controlChannelRequest, payload []byte, appf Appfling
 		resp, err = marshalRPCResponse(result, resultPayload, err)
 		return
 	}
+
+	// log.Println(fmt.Sprintf("\t err: %+v", err))
+	// log.Println(fmt.Sprintf("\t result: %#+v \n", result))
 
 	resp, err = marshalRPCResponse(result, resultPayload, err)
 	return

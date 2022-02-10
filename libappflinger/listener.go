@@ -34,6 +34,23 @@ func NewAppflingerListener(cb *C.appflinger_callbacks_t) (self *AppflingerListen
 	return
 }
 
+func cMalloc(memSize uint) unsafe.Pointer {
+	return C.malloc(C.size_t(memSize))
+}
+
+func cDoubleArray(len uint) unsafe.Pointer {
+	return cMalloc(len * C.sizeof_double)
+}
+
+func goFloat64Array(cPointer unsafe.Pointer, len uint) (result []float64) {
+	// The way C represents double float and they way Go represents float64 are the same (IEEE-754 64-bit), 
+	// so we can create float64 slice and copy data from C memory to Go memory.
+	v := (*[1 << 30]float64)(cPointer)[:len:len]
+	result = make([]float64, len, len)
+	copy(result, v)
+	return
+}
+
 // Implementation of appflinger.AppFlinger interface that just delegates to C Callbacks
 
 func (self *AppflingerListener) Load(sessionId string, instanceId string, url string) (err error) {
@@ -217,7 +234,7 @@ func (self *AppflingerListener) GetSeekable(sessionId string, instanceId string,
 	return
 }
 
-func (self *AppflingerListener) GetBuffered(sessionId string, instanceId string, result *appflinger.GetBufferedResult) (err error) {
+func (self *AppflingerListener) GetBuffered(sessionId string, instanceId string, sourceId string, result *appflinger.GetBufferedResult) (err error) {
 	var duration float64
 	duration, err = self.GetDuration(sessionId, instanceId)
 	if err != nil {
@@ -260,45 +277,175 @@ func (self *AppflingerListener) SetVolume(sessionId string, instanceId string, v
 }
 
 func (self *AppflingerListener) AddSourceBuffer(sessionId string, instanceId string, sourceId string, mimeType string) (err error) {
-	err = nil
+	if self.cb == nil || self.cb.add_source_buffer_cb == nil {
+		return
+	}
+	cSessionId := C.CString(sessionId)
+	cInstanceId := C.CString(instanceId)
+	cSourceId := C.CString(sourceId)
+	cMimeType := C.CString(mimeType)
+	rc := C.invoke_add_source_buffer(self.cb.add_source_buffer_cb, cSessionId, cInstanceId, cSourceId, cMimeType);
+	if rc != 0 {
+		err = fmt.Errorf("Failed to add source buffer")
+	} else {
+		err = nil
+	}
+	C.free(unsafe.Pointer(cSessionId))
+	C.free(unsafe.Pointer(cInstanceId))
+	C.free(unsafe.Pointer(cSourceId))
+	C.free(unsafe.Pointer(cMimeType))
 	return
 }
 
 func (self *AppflingerListener) RemoveSourceBuffer(sessionId string, instanceId string, sourceId string) (err error) {
-	err = nil
+	if self.cb == nil || self.cb.remove_source_buffer_cb == nil {
+		return
+	}
+	cSessionId := C.CString(sessionId)
+	cInstanceId := C.CString(instanceId)
+	cSourceId := C.CString(sourceId)
+	rc := C.invoke_remove_source_buffer(self.cb.remove_source_buffer_cb, cSessionId, cInstanceId, cSourceId);
+	if rc != 0 {
+		err = fmt.Errorf("Failed to remove source buffer")
+	} else {
+		err = nil
+	}
+	C.free(unsafe.Pointer(cSessionId))
+	C.free(unsafe.Pointer(cInstanceId))
+	C.free(unsafe.Pointer(cSourceId))
 	return
 }
 
 func (self *AppflingerListener) AbortSourceBuffer(sessionId string, instanceId string, sourceId string) (err error) {
-	err = nil
+	if self.cb == nil || self.cb.abort_source_buffer_cb == nil {
+		return
+	}
+	cSessionId := C.CString(sessionId)
+	cInstanceId := C.CString(instanceId)
+	cSourceId := C.CString(sourceId)
+	rc := C.invoke_abort_source_buffer(self.cb.abort_source_buffer_cb, cSessionId, cInstanceId, cSourceId);
+	if rc != 0 {
+		err = fmt.Errorf("Failed to abort source buffer")
+	} else {
+		err = nil
+	}
+	C.free(unsafe.Pointer(cSessionId))
+	C.free(unsafe.Pointer(cInstanceId))
+	C.free(unsafe.Pointer(cSourceId))
 	return
 }
 
 func (self *AppflingerListener) AppendBuffer(sessionId string, instanceId string, sourceId string, appendWindowStart float64, appendWindowEnd float64,
 	bufferId string, bufferOffset int, bufferLength int, payload []byte, result *appflinger.GetBufferedResult) (err error) {
-	result.Start = nil
-	result.End = nil
-	err = nil
+	if self.cb == nil || self.cb.append_buffer_cb == nil {
+		return
+	}
+	cSessionId := C.CString(sessionId)
+	cInstanceId := C.CString(instanceId)
+	cSourceId := C.CString(sourceId)
+	cBufferId := C.CString(bufferId)
+	cPayload := C.CBytes(payload)
+	
+	cBufferedStart := cDoubleArray(appflinger.MSE_BUFFERED_LENGTH)
+	cBufferedEnd := cDoubleArray(appflinger.MSE_BUFFERED_LENGTH)
+	var cBufferedLength C.uint = appflinger.MSE_BUFFERED_LENGTH
+
+	rc := C.invoke_append_buffer(self.cb.append_buffer_cb, cSessionId, cInstanceId, cSourceId, C.double(appendWindowStart), C.double(appendWindowEnd),
+		cBufferId, C.int(bufferOffset), C.int(bufferLength), cPayload, C.uint(len(payload)), (*C.double)(cBufferedStart), (*C.double)(cBufferedEnd), &cBufferedLength);
+	if rc != 0 {
+		err = fmt.Errorf("Failed to append buffer")
+	} else {
+		err = nil
+	}
+
+	result.Start = goFloat64Array(cBufferedStart, uint(cBufferedLength))
+	result.End = goFloat64Array(cBufferedEnd, uint(cBufferedLength))
+	
+	C.free(unsafe.Pointer(cSessionId))
+	C.free(unsafe.Pointer(cInstanceId))
+	C.free(unsafe.Pointer(cSourceId))
+	C.free(unsafe.Pointer(cBufferId))
+	C.free(unsafe.Pointer(cPayload))
+	C.free(cBufferedStart)
+	C.free(cBufferedEnd)
 	return
 }
 
 func (self *AppflingerListener) SetAppendMode(sessionId string, instanceId string, sourceId string, mode int) (err error) {
-	err = nil
+	if self.cb == nil || self.cb.set_append_mode_cb == nil {
+		return
+	}
+	cSessionId := C.CString(sessionId)
+	cInstanceId := C.CString(instanceId)
+	cSourceId := C.CString(sourceId)
+	rc := C.invoke_set_append_mode(self.cb.set_append_mode_cb, cSessionId, cInstanceId, cSourceId, C.int(mode));
+	if rc != 0 {
+		err = fmt.Errorf("Failed to set append mode")
+	} else {
+		err = nil
+	}
+	C.free(unsafe.Pointer(cSessionId))
+	C.free(unsafe.Pointer(cInstanceId))
+	C.free(unsafe.Pointer(cSourceId))
 	return
 }
 
 func (self *AppflingerListener) SetAppendTimestampOffset(sessionId string, instanceId string, sourceId string, timestampOffset float64) (err error) {
-	err = nil
+	if self.cb == nil || self.cb.set_append_timestamp_offset_cb == nil {
+		return
+	}
+	cSessionId := C.CString(sessionId)
+	cInstanceId := C.CString(instanceId)
+	cSourceId := C.CString(sourceId)
+	rc := C.invoke_set_append_timestamp_offset(self.cb.set_append_timestamp_offset_cb, cSessionId, cInstanceId, cSourceId, C.double(timestampOffset));
+	if rc != 0 {
+		err = fmt.Errorf("Failed to set append mode")
+	} else {
+		err = nil
+	}
+	C.free(unsafe.Pointer(cSessionId))
+	C.free(unsafe.Pointer(cInstanceId))
+	C.free(unsafe.Pointer(cSourceId))
 	return
 }
 
 func (self *AppflingerListener) RemoveBufferRange(sessionId string, instanceId string, sourceId string, start float64, end float64) (err error) {
-	err = nil
+	if self.cb == nil || self.cb.remove_buffer_range_cb == nil {
+		return
+	}
+	cSessionId := C.CString(sessionId)
+	cInstanceId := C.CString(instanceId)
+	cSourceId := C.CString(sourceId)
+	rc := C.invoke_remove_buffer_range(self.cb.remove_buffer_range_cb, cSessionId, cInstanceId, cSourceId, C.double(start), C.double(end));
+	if rc != 0 {
+		err = fmt.Errorf("Failed to set append mode")
+	} else {
+		err = nil
+	}
+	C.free(unsafe.Pointer(cSessionId))
+	C.free(unsafe.Pointer(cInstanceId))
+	C.free(unsafe.Pointer(cSourceId))
 	return
 }
 
 func (self *AppflingerListener) ChangeSourceBufferType(sessionId string, instanceId string, sourceId string, mimeType string) (err error) {
-	err = nil
+	if self.cb == nil || self.cb.change_source_buffer_type_cb == nil {
+		return
+	}
+	cSessionId := C.CString(sessionId)
+	cInstanceId := C.CString(instanceId)
+	cSourceId := C.CString(sourceId)
+	cMimeType := C.CString(mimeType)
+	rc := C.invoke_change_source_buffer_type(self.cb.change_source_buffer_type_cb, cSessionId, cInstanceId, cSourceId, cMimeType);
+	if rc != 0 {
+		err = fmt.Errorf("Failed to set append mode")
+	} else {
+		err = nil
+	}
+	C.free(unsafe.Pointer(cSessionId))
+	C.free(unsafe.Pointer(cInstanceId))
+	C.free(unsafe.Pointer(cSourceId))
+	C.free(unsafe.Pointer(cMimeType))
 	return
 }
 
@@ -390,14 +537,19 @@ func (self *AppflingerListener) OnPageClose(sessionId string) (err error) {
 }
 
 func (self *AppflingerListener) OnUIFrame(sessionId string, isCodecConfig bool, isKeyFrame bool, idx int, pts int, dts int, data []byte) (err error) {
+	if self.cb == nil || self.cb.on_ui_frame_cb == nil {
+		return
+	}
 	cSessionId := C.CString(sessionId)
+	cData := C.CBytes(data)
 	rc := C.invoke_on_ui_frame(self.cb.on_ui_frame_cb, cSessionId, CBool(isCodecConfig), CBool(isKeyFrame), C.int(idx), C.longlong(pts),
-		C.longlong(dts), C.CBytes(data), C.uint(len(data)))
+		C.longlong(dts), cData, C.uint(len(data)))
 	if rc != 0 {
 		err = fmt.Errorf("Failed to process frame")
 	} else {
 		err = nil
 	}
 	C.free(unsafe.Pointer(cSessionId))
+	C.free(unsafe.Pointer(cData))
 	return
 }

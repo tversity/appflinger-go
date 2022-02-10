@@ -6,7 +6,6 @@
 extern "C" {
 #endif
 
-
 typedef int on_ui_frame_cb_t(const char *session_id, int is_codec_config, int is_key_frame, int idx, long long pts, long long dts,
     void *data, unsigned data_len);
 
@@ -32,7 +31,26 @@ typedef int get_network_state_cb_t(const char *session_id, const char *instance_
 
 typedef int get_ready_state_cb_t(const char *session_id, const char *instance_id, int *ready_state);
 
-typedef int set_rect_cb_t(const char *session_id, const char *instance_id, int x, int y, int width , int height);
+typedef int get_buffered_cb_t(const char *session_id, const char *instance_id, const char *source_id);
+
+typedef int set_rect_cb_t(const char *session_id, const char *instance_id, int x, int y, int width, int height);
+
+typedef int add_source_buffer_cb_t(const char *session_id, const char *instance_id, const char *source_id, const char *mime_type);
+
+typedef int remove_source_buffer_cb_t(const char *session_id, const char *instance_id, const char *source_id);
+
+typedef int abort_source_buffer_cb_t(const char *session_id, const char *instance_id, const char *source_id);
+
+typedef int append_buffer_cb_t(const char *session_id, const char *instance_id, const char *source_id, double append_window_start, double append_window_end,
+    const char *buffer_id, int buffer_offset, int buffer_length, void *payload, unsigned payload_length, double *buffered_start, double *buffered_end, unsigned *buffered_length);
+
+typedef int set_append_mode_cb_t(const char *session_id, const char *instance_id, const char *source_id, int mode);
+
+typedef int set_append_timestamp_offset_cb_t(const char *session_id, const char *instance_id, const char *source_id, double timestamp_offset);
+
+typedef int remove_buffer_range_cb_t(const char *session_id, const char *instance_id, const char *source_id, double start, double end);
+
+typedef int change_source_buffer_type_cb_t(const char *session_id, const char *instance_id, const char *source_id, const char *mime_type);
 
 typedef struct appflinger_callbacks_struct
 {
@@ -49,6 +67,17 @@ typedef struct appflinger_callbacks_struct
     get_current_time_cb_t *get_current_time_cb;
     get_network_state_cb_t *get_network_state_cb;
     get_ready_state_cb_t *get_ready_state_cb;
+    get_buffered_cb_t *get_buffered_cb;
+
+    // MSE related
+    add_source_buffer_cb_t *add_source_buffer_cb;
+    remove_source_buffer_cb_t *remove_source_buffer_cb;
+    abort_source_buffer_cb_t *abort_source_buffer_cb;
+    append_buffer_cb_t *append_buffer_cb;
+    set_append_mode_cb_t *set_append_mode_cb;
+    set_append_timestamp_offset_cb_t *set_append_timestamp_offset_cb;
+    remove_buffer_range_cb_t *remove_buffer_range_cb;
+    change_source_buffer_type_cb_t *change_source_buffer_type_cb;
 } appflinger_callbacks_t;
 
 // Helper functions to invoke the above CBs from Go
@@ -77,8 +106,26 @@ int invoke_get_network_state(get_network_state_cb_t *cb, const char *session_id,
 
 int invoke_get_ready_state(get_ready_state_cb_t *cb, const char *session_id, const char *instance_id, int *ready_state);
 
+int invoke_get_buffered(get_buffered_cb_t *cb, const char *session_id, const char *instance_id, const char *source_id);
+
 int invoke_set_rect(set_rect_cb_t *cb, const char *session_id, const char *instance_id, int x, int y, int width , int height);
 
+int invoke_add_source_buffer(add_source_buffer_cb_t *cb, const char *session_id, const char *instance_id, const char *source_id, const char *mime_type);
+
+int invoke_remove_source_buffer(remove_source_buffer_cb_t *cb, const char *session_id, const char *instance_id, const char *source_id);
+
+int invoke_abort_source_buffer(abort_source_buffer_cb_t *cb, const char *session_id, const char *instance_id, const char *source_id);
+
+int invoke_append_buffer(append_buffer_cb_t *cb, const char *session_id, const char *instance_id, const char *source_id, double append_window_start, double append_window_end,
+    const char *buffer_id, int buffer_offset, int buffer_length, void *payload, unsigned payload_length, double *buffered_start, double *buffered_end, unsigned *buffered_length);
+
+int invoke_set_append_mode(set_append_mode_cb_t *cb, const char *session_id, const char *instance_id, const char *source_id, int mode);
+
+int invoke_set_append_timestamp_offset(set_append_timestamp_offset_cb_t *cb, const char *session_id, const char *instance_id, const char *source_id, double timestamp_offset);
+
+int invoke_remove_buffer_range(remove_buffer_range_cb_t *cb, const char *session_id, const char *instance_id, const char *source_id, double start, double end);
+
+int invoke_change_source_buffer_type(change_source_buffer_type_cb_t *cb, const char *session_id, const char *instance_id, const char *source_id, const char *mime_type);
 
 #ifdef __cplusplus
 }

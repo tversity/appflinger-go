@@ -143,7 +143,7 @@ func (self *AppflingerListenerStub) GetSeekable(sessionId string, instanceId str
 	return
 }
 
-func (self *AppflingerListenerStub) GetBuffered(sessionId string, instanceId string, result *appflinger.GetBufferedResult) (err error) {
+func (self *AppflingerListenerStub) GetBuffered(sessionId string, instanceId string, sourceId string, result *appflinger.GetBufferedResult) (err error) {
 	if self.loaded {
 		err = nil
 		result.Start = []float64{0}
